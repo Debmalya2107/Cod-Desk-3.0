@@ -20,7 +20,7 @@ CSRF_TRUSTED_ORIGINS = [
 if RENDER_EXTERNAL_HOSTNAME:
     CSRF_TRUSTED_ORIGINS.append(f'https://{RENDER_EXTERNAL_HOSTNAME}')
 INSTALLED_APPS = [
-    'daphne',                  # Real-time server (must be at the top)
+    
     'django.contrib.admin',    
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -107,4 +107,5 @@ MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 AUTH_USER_MODEL = 'users.User'
+
 LOGIN_URL = 'login'
