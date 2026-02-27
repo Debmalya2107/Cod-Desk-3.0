@@ -1,0 +1,526 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="relative min-h-screen pb-20">
+    
+    <!-- 3D Animated Background -->
+    <canvas id="vault-canvas" class="fixed inset-0 w-full h-full z-0 pointer-events-none opacity-20"></canvas>
+    
+    <!-- Ambient Gradient Orbs -->
+    <div class="fixed inset-0 pointer-events-none z-0">
+        <div class="absolute top-[-10%] right-[-5%] w-[600px] h-[600px] bg-indigo-500/10 rounded-full blur-[120px] animate-pulse"></div>
+        <div class="absolute bottom-[-10%] left-[-5%] w-[500px] h-[500px] bg-purple-500/10 rounded-full blur-[120px] animate-pulse delay-1000"></div>
+        <div class="absolute top-[30%] left-[20%] w-[400px] h-[400px] bg-emerald-500/5 rounded-full blur-[100px] animate-float"></div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+        
+        <!-- Messages Toast -->
+        {% if messages %}
+        <div class="mb-6 space-y-3">
+            {% for message in messages %}
+            <div class="flex items-center gap-3 p-4 rounded-2xl shadow-xl border backdrop-blur-md animate-fade-in-down
+                {% if message.tags == 'error' %}bg-rose-500/90 border-rose-400 text-white{% else %}bg-gradient-to-r from-indigo-500 to-purple-500 border-white/20 text-white{% endif %}">
+                <div class="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center flex-shrink-0">
+                    {% if message.tags == 'error' %}
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                    {% else %}
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                        </svg>
+                    {% endif %}
+                </div>
+                <p class="font-bold">{{ message }}</p>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <!-- Header Section -->
+        <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-4 animate-fade-in-down">
+            <div>
+                <div class="flex items-center gap-3 mb-2">
+                    <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-indigo-500 via-purple-600 to-emerald-500 flex items-center justify-center shadow-xl shadow-indigo-500/30 animate-pulse-slow">
+                        <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+                        </svg>
+                    </div>
+                    <div>
+                        <h1 class="text-4xl md:text-5xl font-black text-slate-900 dark:text-white tracking-tight">
+                            Secure <span class="bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-emerald-600">Vault</span>
+                        </h1>
+                        <p class="text-slate-500 dark:text-slate-400 mt-1 flex items-center gap-2">
+                            <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                            Zero-Knowledge Encryption for {{ project.title }}
+                        </p>
+                    </div>
+                </div>
+            </div>
+            
+            <a href="{% url 'board_view' project.id %}" class="group flex items-center gap-2 px-6 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition-all duration-300 hover:scale-105 shadow-lg">
+                <svg class="w-5 h-5 transition-transform group-hover:-translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                </svg>
+                Back to Board
+            </a>
+        </div>
+
+        <!-- Security Status Banner -->
+        <div class="mb-8 p-4 bg-gradient-to-r from-emerald-500/10 to-teal-500/10 dark:from-emerald-900/20 dark:to-teal-900/20 rounded-2xl border border-emerald-200 dark:border-emerald-800 flex items-center gap-4 animate-fade-in-up">
+            <div class="w-12 h-12 rounded-xl bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center flex-shrink-0">
+                <svg class="w-6 h-6 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+            </div>
+            <div class="flex-1">
+                <h4 class="font-bold text-slate-900 dark:text-white">End-to-End Encryption Active</h4>
+                <p class="text-sm text-slate-600 dark:text-slate-400">Files are encrypted in your browser before upload. The server never sees your data or password.</p>
+            </div>
+            <div class="hidden md:flex items-center gap-2 px-4 py-2 bg-white/50 dark:bg-slate-800/50 rounded-xl">
+                <svg class="w-5 h-5 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+                </svg>
+                <span class="text-sm font-bold text-slate-700 dark:text-slate-300">AES-256</span>
+            </div>
+        </div>
+
+        <!-- Main Grid -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            
+            <!-- Upload Section -->
+            <div class="lg:col-span-1 animate-fade-in-up delay-100">
+                <div class="relative group sticky top-24">
+                    <div class="absolute -inset-0.5 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-3xl blur opacity-20 group-hover:opacity-40 transition duration-500"></div>
+                    <div class="relative bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl p-8 rounded-3xl border border-indigo-200 dark:border-indigo-800/50 shadow-2xl">
+                        
+                        <!-- Section Header -->
+                        <div class="flex items-center gap-3 mb-6 pb-4 border-b border-indigo-100 dark:border-indigo-900/30">
+                            <div class="w-10 h-10 rounded-xl bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center">
+                                <svg class="w-5 h-5 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                                </svg>
+                            </div>
+                            <div>
+                                <h3 class="text-xl font-bold text-slate-900 dark:text-white">Secure Upload</h3>
+                                <p class="text-xs text-slate-500 dark:text-slate-400">Client-side encryption</p>
+                            </div>
+                        </div>
+
+                        <div class="space-y-5">
+                            <!-- Display Name -->
+                            <div class="group/input">
+                                <label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2 flex items-center gap-2">
+                                    <svg class="w-4 h-4 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path>
+                                    </svg>
+                                    Display Name
+                                </label>
+                                <input type="text" id="customFileName" placeholder="e.g. Final Report" 
+                                       class="w-full bg-slate-50 dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 p-3 rounded-xl focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all text-slate-900 dark:text-white placeholder-slate-400">
+                            </div>
+
+                            <!-- File Input -->
+                            <div class="group/input">
+                                <label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2 flex items-center gap-2">
+                                    <svg class="w-4 h-4 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                                    </svg>
+                                    Select File
+                                </label>
+                                <div class="relative">
+                                    <input type="file" id="rawFileInput" 
+                                           class="w-full bg-slate-50 dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 p-3 rounded-xl focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all text-slate-900 dark:text-white file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-bold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 dark:file:bg-indigo-900/30 dark:file:text-indigo-400">
+                                </div>
+                            </div>
+
+                            <!-- Password -->
+                            <div class="group/input">
+                                <label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2 flex items-center gap-2">
+                                    <svg class="w-4 h-4 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+                                    </svg>
+                                    Encryption Password
+                                </label>
+                                <div class="relative">
+                                    <input type="password" id="encryptPassword" placeholder="Enter strong password..." 
+                                           class="w-full bg-slate-50 dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 p-3 rounded-xl focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all text-slate-900 dark:text-white placeholder-slate-400">
+                                    <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                                        <svg class="h-5 w-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+                                        </svg>
+                                    </div>
+                                </div>
+                                <p class="text-xs text-slate-500 dark:text-slate-400 mt-2 flex items-center gap-1">
+                                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                    </svg>
+                                    This password will be required to decrypt the file
+                                </p>
+                            </div>
+
+                            <!-- Encrypt Button -->
+                            <button type="button" id="encryptBtn" class="group relative w-full bg-gradient-to-r from-indigo-600 via-purple-600 to-emerald-600 text-white py-4 rounded-xl font-bold text-lg shadow-xl shadow-indigo-500/30 hover:shadow-indigo-500/50 transition-all duration-300 hover:scale-[1.02] overflow-hidden mt-4">
+                                <span id="btnText" class="relative z-10 flex items-center justify-center gap-2">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+                                    </svg>
+                                    Encrypt & Upload
+                                </span>
+                                <div class="absolute inset-0 bg-white/20 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700"></div>
+                            </button>
+                        </div>
+
+                        <!-- Hidden Django Form -->
+                        <form id="djangoUploadForm" method="POST" enctype="multipart/form-data" class="hidden">
+                            {% csrf_token %}
+                            {{ form.file }}
+                            {{ form.name }}
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Files List -->
+            <div class="lg:col-span-2 space-y-4 animate-fade-in-up delay-200">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                        <svg class="w-6 h-6 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                        </svg>
+                        Encrypted Files
+                        <span class="ml-2 px-3 py-1 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 text-sm rounded-full font-bold">{{ files|length }}</span>
+                    </h3>
+                </div>
+
+                {% for file in files %}
+                <div class="group relative">
+                    <div class="absolute -inset-0.5 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-2xl blur opacity-0 group-hover:opacity-20 transition duration-300"></div>
+                    <div class="relative bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm p-5 rounded-2xl border border-slate-200 dark:border-slate-700 hover:shadow-xl hover:shadow-indigo-500/10 transition-all duration-300 flex justify-between items-center">
+                        <div class="flex items-center gap-4">
+                            <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-indigo-100 to-purple-100 dark:from-indigo-900/30 dark:to-purple-900/30 flex items-center justify-center flex-shrink-0">
+                                <svg class="w-7 h-7 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+                                </svg>
+                            </div>
+                            <div>
+                                <span class="font-bold text-slate-900 dark:text-white text-lg block truncate max-w-[200px] md:max-w-[300px]">
+                                    {{ file.name }}
+                                </span>
+                                <p class="text-xs text-slate-500 dark:text-slate-400 mt-1 flex items-center gap-2">
+                                    <span class="flex items-center gap-1">
+                                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                                        </svg>
+                                        {{ file.uploaded_by.username }}
+                                    </span>
+                                    <span>•</span>
+                                    <span>{{ file.uploaded_at|date:"M d, Y" }}</span>
+                                </p>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center gap-3">
+                            <button type="button" onclick="openDecryptModal('{{ file.file.url }}', '{{ file.name|escapejs }}')" 
+                                    class="group/btn flex items-center gap-2 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-400 px-5 py-2.5 rounded-xl font-bold border-2 border-indigo-200 dark:border-indigo-800 hover:bg-indigo-100 dark:hover:bg-indigo-900/30 transition-all duration-300 hover:scale-105">
+                                <svg class="w-5 h-5 transition-transform group-hover/btn:rotate-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z"></path>
+                                </svg>
+                                Decrypt
+                            </button>
+
+                            {% if request.user == project.owner %}
+                            <form action="{% url 'delete_project_file' file.id %}" method="POST" class="inline" onsubmit="return confirm('Permanently delete this secure file? This action cannot be undone.');">
+                                {% csrf_token %}
+                                <button type="submit" class="group/del p-2.5 rounded-xl bg-rose-50 dark:bg-rose-900/20 text-rose-600 dark:text-rose-400 border-2 border-rose-200 dark:border-rose-800 hover:bg-rose-100 dark:hover:bg-rose-900/30 transition-all duration-300 hover:scale-105" title="Delete File">
+                                    <svg class="w-5 h-5 transition-transform group-hover/del:rotate-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                                    </svg>
+                                </button>
+                            </form>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="text-center py-16 bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm rounded-3xl border-2 border-dashed border-slate-200 dark:border-slate-700 animate-fade-in-up">
+                    <div class="w-20 h-20 mx-auto mb-6 rounded-2xl bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-700 flex items-center justify-center">
+                        <svg class="w-10 h-10 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+                        </svg>
+                    </div>
+                    <h4 class="text-xl font-bold text-slate-800 dark:text-white mb-2">No secure files yet</h4>
+                    <p class="text-slate-500 dark:text-slate-400 max-w-md mx-auto mb-6">Upload your first encrypted file to the vault. Your data will be protected with military-grade encryption.</p>
+                    <button onclick="document.getElementById('customFileName').focus()" class="px-6 py-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-bold shadow-lg shadow-indigo-500/30 transition-all duration-300 hover:scale-105 flex items-center gap-2 mx-auto">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                        </svg>
+                        Upload First File
+                    </button>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Decrypt Modal -->
+    <div id="decryptModal" class="hidden fixed inset-0 bg-black/70 backdrop-blur-md flex items-center justify-center z-50 p-4 opacity-0 transition-opacity duration-300">
+        <div class="bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl rounded-3xl max-w-md w-full shadow-2xl border border-slate-200 dark:border-slate-700 transform scale-95 transition-transform duration-300" id="modalContent">
+            <div class="p-6 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-t-3xl">
+                <div class="flex items-center gap-3">
+                    <div class="p-2 bg-white/20 rounded-xl">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z"></path>
+                        </svg>
+                    </div>
+                    <h3 class="text-xl font-bold">Unlock File</h3>
+                </div>
+                <button onclick="closeDecryptModal()" class="text-white/70 hover:text-white hover:bg-white/20 rounded-xl p-2 transition">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+            <div class="p-8 space-y-5">
+                <div class="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-2xl border border-slate-200 dark:border-slate-700 text-center">
+                    <p class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Target File</p>
+                    <p id="decryptModalFilename" class="text-slate-900 dark:text-white font-medium truncate flex items-center justify-center gap-2">
+                        <svg class="w-4 h-4 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                        </svg>
+                        <span id="filenameText"></span>
+                    </p>
+                </div>
+                
+                <div class="relative">
+                    <label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Decryption Password</label>
+                    <input type="password" id="decryptPassword" placeholder="Enter password..." 
+                           class="w-full bg-slate-50 dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 p-4 rounded-xl focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all text-slate-900 dark:text-white placeholder-slate-400">
+                    <div class="absolute bottom-4 right-4">
+                        <svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+                        </svg>
+                    </div>
+                </div>
+
+                <button type="button" id="doDecryptBtn" class="group relative w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-4 rounded-xl font-bold text-lg shadow-xl shadow-indigo-500/30 hover:shadow-indigo-500/50 transition-all duration-300 hover:scale-[1.02] overflow-hidden flex items-center justify-center gap-2">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z"></path>
+                    </svg>
+                    <span id="decryptBtnText">Unlock & Download</span>
+                    <div class="absolute inset-0 bg-white/20 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700"></div>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        /* Animations */
+        @keyframes fade-in-down {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes fade-in-up {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-20px); }
+        }
+        @keyframes pulse-slow {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.8; }
+        }
+        
+        .animate-fade-in-down { animation: fade-in-down 0.8s ease-out forwards; }
+        .animate-fade-in-up { animation: fade-in-up 0.8s ease-out forwards; opacity: 0; }
+        .animate-fade-in-up.delay-100 { animation-delay: 0.1s; animation-fill-mode: forwards; }
+        .animate-fade-in-up.delay-200 { animation-delay: 0.2s; animation-fill-mode: forwards; }
+        .animate-float { animation: float 6s ease-in-out infinite; }
+        .animate-pulse-slow { animation: pulse-slow 3s ease-in-out infinite; }
+    </style>
+
+    <script src="https://cdn.jsdelivr.net/npm/libsodium-wrappers@0.7.13/dist/browsers/sodium.js"></script>
+    <script src="{% static 'js/crypto.js' %}"></script>
+
+    <script>
+        // 3D Background Animation
+        const initThreeJS = () => {
+            const canvas = document.getElementById('vault-canvas');
+            const scene = new THREE.Scene();
+            const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            const renderer = new THREE.WebGLRenderer({ canvas: canvas, alpha: true, antialias: true });
+            
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+            // Create floating particles - security themed
+            const particlesGeometry = new THREE.BufferGeometry();
+            const particlesCount = 120;
+            const posArray = new Float32Array(particlesCount * 3);
+            
+            for(let i = 0; i < particlesCount * 3; i++) {
+                posArray[i] = (Math.random() - 0.5) * 20;
+            }
+            
+            particlesGeometry.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
+            
+            const material = new THREE.PointsMaterial({
+                size: 0.05,
+                color: 0x6366f1,
+                transparent: true,
+                opacity: 0.5
+            });
+            
+            const particlesMesh = new THREE.Points(particlesGeometry, material);
+            scene.add(particlesMesh);
+
+            // Add connecting lines for network effect
+            const lineMaterial = new THREE.LineBasicMaterial({ 
+                color: 0x6366f1, 
+                transparent: true, 
+                opacity: 0.05 
+            });
+
+            camera.position.z = 5;
+
+            // Mouse interaction
+            let mouseX = 0;
+            let mouseY = 0;
+            
+            document.addEventListener('mousemove', (event) => {
+                mouseX = (event.clientX / window.innerWidth) * 2 - 1;
+                mouseY = -(event.clientY / window.innerHeight) * 2 + 1;
+            });
+
+            const animate = () => {
+                requestAnimationFrame(animate);
+                
+                particlesMesh.rotation.y += 0.0005;
+                particlesMesh.rotation.x += mouseY * 0.0005;
+                particlesMesh.rotation.y += mouseX * 0.0005;
+                
+                renderer.render(scene, camera);
+            };
+            animate();
+
+            window.addEventListener('resize', () => {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            });
+        };
+        initThreeJS();
+
+        // Encryption Logic
+        document.addEventListener("DOMContentLoaded", async () => {
+            if (window.secureCrypto) { await window.secureCrypto.init(); }
+
+            const rawFileInput = document.getElementById("rawFileInput");
+            const passwordInput = document.getElementById("encryptPassword");
+            const customNameInput = document.getElementById("customFileName");
+            const encryptBtn = document.getElementById("encryptBtn");
+            const btnText = document.getElementById("btnText");
+            const djangoForm = document.getElementById("djangoUploadForm");
+            const djangoFileInput = document.querySelector('#djangoUploadForm input[type="file"]');
+            const djangoCustomNameInput = document.querySelector('[name="name"]');
+
+            encryptBtn.addEventListener("click", async () => {
+                const file = rawFileInput.files[0];
+                const password = passwordInput.value;
+                const customName = customNameInput.value;
+
+                if (!file || !password || !customName) {
+                    alert("Display Name, File, and Password are required!");
+                    return;
+                }
+
+                try {
+                    encryptBtn.disabled = true;
+                    btnText.innerHTML = '<svg class="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Encrypting...';
+                    
+                    const arrayBuffer = await file.arrayBuffer();
+                    const result = await window.secureCrypto.encryptFile(arrayBuffer, password, file.name);
+                    const encryptedFile = new File([new Blob([result.encryptedData])], file.name + ".enc", { type: "application/octet-stream" });
+                    
+                    const dataTransfer = new DataTransfer();
+                    dataTransfer.items.add(encryptedFile);
+                    djangoFileInput.files = dataTransfer.files;
+                    
+                    djangoCustomNameInput.value = customName;
+
+                    djangoForm.submit();
+                } catch (e) {
+                    alert("Error: " + e.message);
+                    encryptBtn.disabled = false;
+                    btnText.innerHTML = '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg> Encrypt & Upload';
+                }
+            });
+
+            let currentDecryptUrl = "";
+            let currentDecryptName = "";
+            
+            window.openDecryptModal = function (url, name) {
+                currentDecryptUrl = url;
+                currentDecryptName = name;
+                document.getElementById("filenameText").innerText = name;
+                const modal = document.getElementById("decryptModal");
+                modal.classList.remove("hidden");
+                setTimeout(() => {
+                    modal.classList.remove("opacity-0");
+                    document.getElementById("modalContent").classList.remove("scale-95");
+                    document.getElementById("modalContent").classList.add("scale-100");
+                }, 10);
+            };
+            
+            window.closeDecryptModal = function () {
+                const modal = document.getElementById("decryptModal");
+                modal.classList.add("opacity-0");
+                document.getElementById("modalContent").classList.remove("scale-100");
+                document.getElementById("modalContent").classList.add("scale-95");
+                setTimeout(() => {
+                    modal.classList.add("hidden");
+                    document.getElementById("decryptPassword").value = "";
+                }, 300);
+            };
+
+            document.getElementById("doDecryptBtn").addEventListener("click", async () => {
+                const password = document.getElementById("decryptPassword").value;
+                const btn = document.getElementById("doDecryptBtn");
+                const btnText = document.getElementById("decryptBtnText");
+                
+                if (!password) {
+                    alert("Please enter the decryption password.");
+                    return;
+                }
+
+                try {
+                    btnText.innerHTML = '<svg class="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Decrypting...';
+                    btn.disabled = true;
+                    
+                    const response = await fetch(currentDecryptUrl);
+                    const buffer = await response.arrayBuffer();
+                    const result = await window.secureCrypto.decryptFile(buffer, password);
+                    
+                    const url = window.URL.createObjectURL(new Blob([result.decryptedData]));
+                    const a = document.createElement("a");
+                    a.href = url;
+                    a.download = result.metadata.originalFileName || currentDecryptName.replace(".enc", "");
+                    a.click();
+                    
+                    closeDecryptModal();
+                } catch (e) {
+                    alert("Wrong password or corrupted file!");
+                } finally {
+                    btnText.innerHTML = '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z"></path></svg> Unlock & Download';
+                    btn.disabled = false;
+                }
+            });
+        });
+    </script>
+</div>
+{% endblock %}

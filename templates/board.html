@@ -1,0 +1,919 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+
+<style>
+:root {
+    --bg: #f4f6fb;
+    --surface: #ffffff;
+    --surface-alt: #f1f5f9;
+    --surface-hover: #f8faff;
+    --border: rgba(0,0,0,0.07);
+    --border-strong: rgba(0,0,0,0.12);
+    --heading: #0f172a;
+    --body: #1e293b;
+    --muted: #64748b;
+    --faint: #94a3b8;
+    --indigo: #6366f1;
+    --indigo-soft: rgba(99,102,241,0.1);
+    --indigo-border: rgba(99,102,241,0.25);
+    --card-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.04);
+    --card-shadow-hover: 0 8px 30px rgba(0,0,0,0.1);
+    --col-bg: #eef0f6;
+    --toggle-bg: #e2e8f0;
+    --toggle-knob: #fff;
+    --toggle-move: translateX(0);
+    --sun-display: none;
+    --moon-display: block;
+}
+.dark-mode {
+    --bg: #060913;
+    --surface: rgba(255,255,255,0.035);
+    --surface-alt: rgba(255,255,255,0.025);
+    --surface-hover: rgba(255,255,255,0.055);
+    --border: rgba(255,255,255,0.07);
+    --border-strong: rgba(255,255,255,0.12);
+    --heading: #f1f5f9;
+    --body: #cbd5e1;
+    --muted: #64748b;
+    --faint: #475569;
+    --indigo: #818cf8;
+    --indigo-soft: rgba(129,140,248,0.1);
+    --indigo-border: rgba(129,140,248,0.25);
+    --card-shadow: 0 1px 3px rgba(0,0,0,0.3), 0 4px 16px rgba(0,0,0,0.2);
+    --card-shadow-hover: 0 8px 30px rgba(0,0,0,0.4);
+    --col-bg: rgba(255,255,255,0.03);
+    --toggle-bg: #1e1b4b;
+    --toggle-knob: #818cf8;
+    --toggle-move: translateX(26px);
+    --sun-display: block;
+    --moon-display: none;
+}
+
+* { box-sizing: border-box; }
+
+body { background-color: var(--bg); transition: background-color 0.4s; }
+
+#board-page {
+    min-height: 100vh;
+    background: var(--bg);
+    color: var(--body);
+    transition: background 0.4s, color 0.4s;
+    font-family: 'Syne', sans-serif;
+    padding-bottom: 4rem;
+}
+
+/* ─── CANVAS BG ─── */
+#board-canvas {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 0;
+    pointer-events: none;
+    opacity: 0.18;
+}
+
+/* ─── TOGGLE ─── */
+#theme-toggle {
+    position: fixed;
+    top: 1.25rem;
+    right: 1.5rem;
+    z-index: 100;
+    width: 54px;
+    height: 28px;
+    border-radius: 999px;
+    border: 1px solid var(--border-strong);
+    background: var(--toggle-bg);
+    cursor: pointer;
+    transition: background 0.4s, border-color 0.4s;
+}
+#toggle-knob {
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: var(--toggle-knob);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transform: var(--toggle-move);
+    transition: transform 0.4s cubic-bezier(0.34,1.56,0.64,1), background 0.4s;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+}
+
+/* ─── MESSAGES ─── */
+.msg-error { background: rgba(239,68,68,0.1); color: #ef4444; border: 1px solid rgba(239,68,68,0.25); }
+.msg-success { background: var(--indigo-soft); color: var(--indigo); border: 1px solid var(--indigo-border); }
+
+/* ─── HEADER ─── */
+.project-header {
+    position: relative;
+    z-index: 10;
+    padding: 2.5rem 2rem 0;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+.project-title {
+    font-size: clamp(1.75rem, 4vw, 2.5rem);
+    font-weight: 800;
+    color: var(--heading);
+    margin: 0;
+    letter-spacing: -0.03em;
+}
+.project-desc {
+    color: var(--muted);
+    margin-top: 0.4rem;
+    font-family: 'Space Mono', monospace;
+    font-size: 0.8rem;
+}
+.project-badge {
+    display: inline-block;
+    padding: 0.25rem 0.75rem;
+    border-radius: 999px;
+    font-size: 0.65rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    background: var(--indigo-soft);
+    color: var(--indigo);
+    border: 1px solid var(--indigo-border);
+    font-family: 'Space Mono', monospace;
+    margin-bottom: 0.75rem;
+}
+
+/* ─── NAV BUTTONS ─── */
+.nav-btns { display: flex; flex-wrap: wrap; gap: 0.6rem; margin-top: 1.5rem; }
+.nav-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.5rem 1.1rem;
+    border-radius: 999px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    border: 1px solid var(--border-strong);
+    background: var(--surface);
+    color: var(--body);
+    text-decoration: none;
+    transition: all 0.25s;
+    box-shadow: var(--card-shadow);
+    font-family: 'Syne', sans-serif;
+    letter-spacing: 0.01em;
+}
+.nav-btn:hover { transform: translateY(-2px); box-shadow: var(--card-shadow-hover); }
+.nav-btn-chat  { border-color: rgba(99,102,241,0.4); color: var(--indigo); }
+.nav-btn-files { border-color: rgba(249,115,22,0.4); color: #f97316; }
+.nav-btn-analytics { border-color: rgba(168,85,247,0.4); color: #a855f7; }
+.nav-btn-team  { border-color: rgba(20,184,166,0.4); color: #14b8a6; }
+.nav-btn-settings { border-color: var(--border-strong); color: var(--muted); }
+
+.nav-btn-chat:hover  { background: rgba(99,102,241,0.08); }
+.nav-btn-files:hover { background: rgba(249,115,22,0.08); }
+.nav-btn-analytics:hover { background: rgba(168,85,247,0.08); }
+.nav-btn-team:hover  { background: rgba(20,184,166,0.08); }
+.nav-btn-settings:hover { background: var(--surface-alt); }
+
+/* ─── DIVIDER ─── */
+.section-divider {
+    max-width: 1200px;
+    margin: 2rem auto;
+    height: 1px;
+    background: var(--border);
+    position: relative;
+    z-index: 10;
+}
+
+/* ─── ADD TASK PANEL ─── */
+.add-task-panel {
+    position: relative;
+    z-index: 10;
+    max-width: 1200px;
+    margin: 0 auto 2rem;
+    padding: 0 2rem;
+}
+.add-task-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 1.5rem 1.75rem;
+    box-shadow: var(--card-shadow);
+    position: relative;
+    overflow: hidden;
+}
+.add-task-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, #6366f1, #a855f7, #06b6d4);
+}
+.add-task-label {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--heading);
+    margin: 0 0 1rem;
+}
+.add-task-form { display: flex; gap: 0.75rem; }
+.add-task-input {
+    flex: 1;
+    padding: 0.65rem 1rem;
+    border-radius: 12px;
+    border: 1px solid var(--border-strong);
+    background: var(--surface-alt);
+    color: var(--body);
+    font-family: 'Syne', sans-serif;
+    font-size: 0.88rem;
+    outline: none;
+    transition: border-color 0.25s, box-shadow 0.25s;
+}
+.add-task-input:focus { border-color: var(--indigo); box-shadow: 0 0 0 3px var(--indigo-soft); }
+.add-task-input::placeholder { color: var(--faint); }
+.btn-add-task {
+    padding: 0.65rem 1.4rem;
+    border-radius: 12px;
+    background: var(--indigo);
+    color: #fff;
+    font-weight: 700;
+    font-family: 'Syne', sans-serif;
+    font-size: 0.85rem;
+    border: none;
+    cursor: pointer;
+    transition: all 0.25s;
+    white-space: nowrap;
+}
+.btn-add-task:hover { opacity: 0.9; transform: translateY(-1px); }
+
+.btn-ai {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.55rem 1.2rem;
+    border-radius: 999px;
+    background: linear-gradient(135deg, #7c3aed, #6366f1);
+    color: #fff;
+    font-weight: 700;
+    font-family: 'Syne', sans-serif;
+    font-size: 0.78rem;
+    border: none;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.3s;
+    box-shadow: 0 0 20px -5px rgba(99,102,241,0.5);
+    letter-spacing: 0.02em;
+}
+.btn-ai:hover { transform: translateY(-2px); box-shadow: 0 0 30px -5px rgba(99,102,241,0.7); }
+.ai-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.75rem; }
+
+/* ─── BOARD ─── */
+.board-wrap {
+    position: relative;
+    z-index: 10;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 2rem;
+}
+.board-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.25rem;
+}
+@media (max-width: 900px) {
+    .board-grid { grid-template-columns: 1fr; }
+    .project-header, .add-task-panel, .board-wrap { padding-left: 1rem; padding-right: 1rem; }
+    .add-task-form { flex-direction: column; }
+}
+
+/* ─── COLUMNS ─── */
+.board-col {
+    background: var(--col-bg);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 1.25rem;
+    min-height: 340px;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    transition: background 0.4s, border-color 0.4s;
+}
+.col-header {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    margin-bottom: 1rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid var(--border);
+}
+.col-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+.col-title {
+    font-size: 0.8rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--muted);
+    font-family: 'Space Mono', monospace;
+}
+.col-count {
+    margin-left: auto;
+    font-size: 0.7rem;
+    font-weight: 700;
+    font-family: 'Space Mono', monospace;
+    color: var(--faint);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 0.1rem 0.5rem;
+    border-radius: 999px;
+}
+.task-list { display: flex; flex-direction: column; gap: 0.6rem; flex: 1; }
+
+/* ─── TASK CARDS ─── */
+.task-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 0.9rem 1rem;
+    box-shadow: var(--card-shadow);
+    transition: all 0.25s cubic-bezier(0.16,1,0.3,1);
+    position: relative;
+    overflow: hidden;
+    animation: cardIn 0.4s ease both;
+}
+.task-card:hover {
+    box-shadow: var(--card-shadow-hover);
+    transform: translateY(-2px);
+    border-color: var(--border-strong);
+}
+.task-card::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 3px;
+    border-radius: 3px 0 0 3px;
+    opacity: 0;
+    transition: opacity 0.25s;
+}
+.task-card:hover::before { opacity: 1; }
+.col-todo .task-card::before      { background: #ef4444; }
+.col-progress .task-card::before  { background: #f59e0b; }
+.col-done .task-card::before      { background: #10b981; }
+
+.task-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 0.5rem; }
+.task-title { font-size: 0.875rem; font-weight: 600; color: var(--heading); line-height: 1.4; }
+.task-title-done { text-decoration: line-through; color: var(--faint); }
+
+.btn-guide {
+    flex-shrink: 0;
+    width: 28px; height: 28px;
+    border-radius: 8px;
+    border: 1px solid var(--indigo-border);
+    background: var(--indigo-soft);
+    color: var(--indigo);
+    cursor: pointer;
+    font-size: 0.7rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    font-family: 'Space Mono', monospace;
+}
+.btn-guide:hover { background: var(--indigo); color: #fff; transform: scale(1.1); }
+
+.task-action { margin-top: 0.75rem; }
+
+.btn-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.3rem 0.85rem;
+    border-radius: 8px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    border: 1px solid transparent;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: 'Space Mono', monospace;
+    letter-spacing: 0.03em;
+    background: none;
+}
+.btn-start { background: rgba(59,130,246,0.1); color: #3b82f6; border-color: rgba(59,130,246,0.25); }
+.btn-start:hover { background: #3b82f6; color: #fff; }
+.btn-done-action { background: rgba(16,185,129,0.1); color: #10b981; border-color: rgba(16,185,129,0.25); }
+.btn-done-action:hover { background: #10b981; color: #fff; }
+
+.task-done-check {
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    background: rgba(16,185,129,0.15);
+    border: 1.5px solid rgba(16,185,129,0.4);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    color: #10b981;
+    font-size: 0.65rem;
+    font-weight: 900;
+}
+.task-done-row { display: flex; align-items: center; gap: 0.6rem; }
+.task-claimed { font-size: 0.7rem; color: var(--faint); margin-top: 0.5rem; font-family: 'Space Mono', monospace; padding-left: 1.7rem; font-style: italic; }
+
+/* ─── EMPTY STATE ─── */
+.col-empty {
+    display: none; /* Let JS handle showing this */
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    flex: 1;
+    padding: 2rem;
+    color: var(--faint);
+    text-align: center;
+}
+.col-empty-icon {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    border: 2px dashed var(--border-strong);
+    margin-bottom: 0.5rem;
+    display: flex; align-items: center; justify-content: center;
+}
+.col-empty-txt { font-size: 0.75rem; font-family: 'Space Mono', monospace; }
+
+/* ─── MODAL ─── */
+#guideModal {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.55);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 200;
+    padding: 1rem;
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+}
+#guideModal.hidden { display: none; }
+.modal-card {
+    background: var(--surface);
+    border: 1px solid var(--border-strong);
+    border-radius: 24px;
+    max-width: 480px;
+    width: 100%;
+    box-shadow: 0 30px 80px rgba(0,0,0,0.25);
+    overflow: hidden;
+    animation: modalIn 0.35s cubic-bezier(0.16,1,0.3,1);
+}
+.modal-header {
+    padding: 1.25rem 1.5rem;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: linear-gradient(135deg, #4f46e5, #7c3aed);
+}
+.modal-header-title { color: #fff; font-size: 1rem; font-weight: 700; }
+.modal-close {
+    background: rgba(255,255,255,0.15);
+    border: none;
+    color: #fff;
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 1.1rem;
+    display: flex; align-items: center; justify-content: center;
+    transition: background 0.2s;
+    font-weight: 700;
+}
+.modal-close:hover { background: rgba(255,255,255,0.3); }
+.modal-body { padding: 1.5rem; }
+.modal-guide-box {
+    background: var(--indigo-soft);
+    border: 1px solid var(--indigo-border);
+    border-radius: 14px;
+    padding: 1rem 1.1rem;
+    margin-bottom: 1rem;
+}
+.modal-guide-label {
+    font-size: 0.6rem;
+    font-weight: 700;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--indigo);
+    font-family: 'Space Mono', monospace;
+    margin-bottom: 0.4rem;
+}
+.modal-guide-text { color: var(--body); font-size: 0.875rem; line-height: 1.65; }
+.modal-hint { font-size: 0.7rem; color: var(--faint); text-align: center; font-family: 'Space Mono', monospace; }
+.modal-footer {
+    padding: 0.9rem 1.5rem;
+    border-top: 1px solid var(--border);
+    text-align: right;
+    background: var(--surface-alt);
+}
+.btn-modal-close {
+    padding: 0.5rem 1.5rem;
+    border-radius: 10px;
+    background: var(--heading);
+    color: var(--bg);
+    font-weight: 700;
+    font-family: 'Syne', sans-serif;
+    font-size: 0.85rem;
+    border: none;
+    cursor: pointer;
+    transition: opacity 0.2s;
+}
+.btn-modal-close:hover { opacity: 0.8; }
+
+/* ─── ANIMATIONS ─── */
+@keyframes cardIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes modalIn {
+    from { opacity: 0; transform: scale(0.92) translateY(16px); }
+    to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+.fade-in { animation: fadeIn 0.5s ease both; }
+.fade-in-1 { animation-delay: 0.05s; }
+.fade-in-2 { animation-delay: 0.1s; }
+.fade-in-3 { animation-delay: 0.15s; }
+
+/* ─── SCROLLBAR ─── */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 99px; }
+</style>
+
+<canvas id="board-canvas"></canvas>
+
+<div id="board-page">
+
+    <button id="theme-toggle" aria-label="Toggle theme">
+        <span id="toggle-knob">
+            <svg id="sun-svg" style="display:var(--sun-display);" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <svg id="moon-svg" style="display:var(--moon-display);" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </span>
+    </button>
+
+    {% if messages %}
+    <div style="position:relative;z-index:10;max-width:1200px;margin:0 auto;padding:1.5rem 2rem 0;">
+        {% for message in messages %}
+        <div class="p-4 rounded-xl mb-2 text-sm font-semibold fade-in {% if message.tags == 'error' %}msg-error{% else %}msg-success{% endif %}" style="border-radius:12px;">
+            {{ message }}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <header class="project-header fade-in">
+        <div class="project-badge">Project Workspace</div>
+        <div style="display:flex;flex-wrap:wrap;gap:1rem;align-items:flex-start;justify-content:space-between;">
+            <div>
+                <h1 class="project-title">{{ project.title }}</h1>
+                <p class="project-desc">{{ project.description }}</p>
+            </div>
+        </div>
+        <nav class="nav-btns">
+            <a href="{% url 'project_chat' project.id %}" class="nav-btn nav-btn-chat">
+                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                Chat
+            </a>
+            <a href="{% url 'project_files' project.id %}" class="nav-btn nav-btn-files">
+                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                Files
+            </a>
+            <a href="{% url 'project_analytics' project.id %}" class="nav-btn nav-btn-analytics">
+                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                Analytics
+            </a>
+            {% if request.user == project.owner %}
+            <a href="{% url 'manage_team' project.id %}" class="nav-btn nav-btn-team">
+                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                Manage Team
+            </a>
+            <a href="{% url 'edit_project' project.id %}" class="nav-btn nav-btn-settings">
+                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" stroke-linecap="round" stroke-linejoin="round"/><path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                Settings
+            </a>
+            {% endif %}
+        </nav>
+    </header>
+
+    <div class="section-divider"></div>
+
+    {% if request.user == project.owner %}
+    <div class="add-task-panel fade-in fade-in-1">
+        <div class="add-task-card">
+            <div class="ai-row">
+                <h3 class="add-task-label">Add a New Task</h3>
+                <a href="{% url 'generate_ai_tasks' project.id %}" 
+                   onclick="this.innerHTML='<svg width=&quot;13&quot; height=&quot;13&quot; fill=&quot;none&quot; stroke=&quot;currentColor&quot; stroke-width=&quot;2&quot; viewBox=&quot;0 0 24 24&quot; style=&quot;animation:spin 1s linear infinite&quot;><path d=&quot;M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15&quot; stroke-linecap=&quot;round&quot; stroke-linejoin=&quot;round&quot;/></svg> Thinking...'; this.style.opacity=0.7; this.style.pointerEvents=&quot;none&quot;;"
+                   class="btn-ai">
+                    <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M13 10V3L4 14h7v7l9-11h-7z" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    Generate with AI
+                </a>
+            </div>
+            <form action="{% url 'add_task' project.id %}" method="POST" class="add-task-form">
+                {% csrf_token %}
+                <input type="text" name="title" placeholder="e.g., Fix login bug, Write documentation..." required class="add-task-input">
+                <button type="submit" class="btn-add-task">Add Task</button>
+            </form>
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="board-wrap fade-in fade-in-2">
+        <div id="board-container" hx-get="{% url 'board_view' project.id %}" hx-trigger="every 5s, refreshBoard from:body" hx-select="#board-container" hx-swap="outerHTML">
+            <div class="board-grid">
+
+                <div class="board-col col-todo">
+                    <div class="col-header">
+                        <span class="col-dot" style="background:#ef4444;"></span>
+                        <span class="col-title">To Do</span>
+                        <span class="col-count">0</span>
+                    </div>
+                    <div class="task-list">
+                        {% for task in tasks %}
+                            {% if task.status == 'TODO' %}
+                            <div class="task-card">
+                                <div class="task-top">
+                                    <span class="task-title">{{ task.title }}</span>
+                                    {% if task.description %}
+                                    <button onclick="openGuide('{{ task.title|escapejs }}', '{{ task.description|escapejs }}')" class="btn-guide" title="View AI Guide">AI</button>
+                                    {% endif %}
+                                </div>
+                                <div class="task-action">
+                                    <button hx-post="{% url 'update_task' task.id 'IN_PROGRESS' %}" hx-swap="none" class="btn-status btn-start">
+                                        <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M13 7l5 5m0 0l-5 5m5-5H6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                                        Start
+                                    </button>
+                                </div>
+                            </div>
+                            {% endif %}
+                        {% endfor %}
+                        
+                        <div class="col-empty">
+                            <div class="col-empty-icon">
+                                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 4v16m8-8H4" stroke-linecap="round"/></svg>
+                            </div>
+                            <p class="col-empty-txt">No tasks yet</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="board-col col-progress">
+                    <div class="col-header">
+                        <span class="col-dot" style="background:#f59e0b;"></span>
+                        <span class="col-title">In Progress</span>
+                        <span class="col-count">0</span>
+                    </div>
+                    <div class="task-list">
+                        {% for task in tasks %}
+                            {% if task.status == 'IN_PROGRESS' %}
+                            <div class="task-card">
+                                <div class="task-top">
+                                    <span class="task-title">{{ task.title }}</span>
+                                    {% if task.description %}
+                                    <button onclick="openGuide('{{ task.title|escapejs }}', '{{ task.description|escapejs }}')" class="btn-guide" title="View AI Guide">AI</button>
+                                    {% endif %}
+                                </div>
+                                <div class="task-action">
+                                    <button hx-post="{% url 'update_task' task.id 'DONE' %}" hx-swap="none" class="btn-status btn-done-action">
+                                        <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                                        Done
+                                    </button>
+                                </div>
+                            </div>
+                            {% endif %}
+                        {% endfor %}
+                        
+                        <div class="col-empty">
+                            <div class="col-empty-icon">
+                                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" stroke-linecap="round"/></svg>
+                            </div>
+                            <p class="col-empty-txt">Nothing in progress</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="board-col col-done">
+                    <div class="col-header">
+                        <span class="col-dot" style="background:#10b981;"></span>
+                        <span class="col-title">Completed</span>
+                        <span class="col-count">0</span>
+                    </div>
+                    <div class="task-list">
+                        {% for task in tasks %}
+                            {% if task.status == 'DONE' %}
+                            <div class="task-card" style="opacity:0.7;">
+                                <div class="task-done-row">
+                                    <div class="task-done-check">
+                                        <svg width="9" height="9" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                                    </div>
+                                    <span class="task-title task-title-done">{{ task.title }}</span>
+                                </div>
+                                {% if task.assigned_to %}
+                                <p class="task-claimed">Completed by {{ task.assigned_to.username }}</p>
+                                {% endif %}
+                            </div>
+                            {% endif %}
+                        {% endfor %}
+                        
+                        <div class="col-empty">
+                            <div class="col-empty-icon">
+                                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" stroke-linecap="round"/></svg>
+                            </div>
+                            <p class="col-empty-txt">No completed tasks</p>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+</div><div id="guideModal" class="hidden">
+    <div class="modal-card">
+        <div class="modal-header">
+            <div style="display:flex;align-items:center;gap:0.5rem;">
+                <div style="width:28px;height:28px;border-radius:8px;background:rgba(255,255,255,0.15);display:flex;align-items:center;justify-content:center;">
+                    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </div>
+                <span id="modalTitle" class="modal-header-title">Task Guide</span>
+            </div>
+            <button onclick="closeGuide()" class="modal-close">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div class="modal-guide-box">
+                <p class="modal-guide-label">AI Mentor Instructions</p>
+                <p id="modalBody" class="modal-guide-text"></p>
+            </div>
+            <p class="modal-hint">Complete these steps, then move the task to Completed.</p>
+        </div>
+        <div class="modal-footer">
+            <button onclick="closeGuide()" class="btn-modal-close">Got it</button>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+<style>
+@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+</style>
+
+<script>
+// ─── THEME ───
+const root = document.documentElement;
+const body = document.getElementById('board-page');
+const toggle = document.getElementById('theme-toggle');
+
+function isDark() { return localStorage.getItem('sc-board-theme') === 'dark' || (!localStorage.getItem('sc-board-theme') && window.matchMedia('(prefers-color-scheme: dark)').matches); }
+
+function applyTheme(dark) {
+    if (dark) {
+        body.classList.add('dark-mode');
+        document.body.style.backgroundColor = '#060913';
+    } else {
+        body.classList.remove('dark-mode');
+        document.body.style.backgroundColor = '#f4f6fb';
+    }
+    body.style.setProperty('--sun-display', dark ? 'block' : 'none');
+    body.style.setProperty('--moon-display', dark ? 'none' : 'block');
+    document.getElementById('sun-svg').style.display = dark ? 'block' : 'none';
+    document.getElementById('moon-svg').style.display = dark ? 'none' : 'block';
+}
+
+applyTheme(isDark());
+
+toggle.addEventListener('click', () => {
+    const next = !body.classList.contains('dark-mode');
+    localStorage.setItem('sc-board-theme', next ? 'dark' : 'light');
+    applyTheme(next);
+});
+
+// ─── THREE.JS BACKGROUND ───
+(function() {
+    const canvas = document.getElementById('board-canvas');
+    canvas.style.position = 'fixed';
+    canvas.style.inset = '0';
+    canvas.style.width = '100%';
+    canvas.style.height = '100%';
+    canvas.style.zIndex = '0';
+    canvas.style.pointerEvents = 'none';
+
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.1, 1000);
+    const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+    const torusGeo = new THREE.TorusGeometry(9, 0.5, 12, 60);
+    const torusMat = new THREE.MeshBasicMaterial({ color: 0x6366f1, wireframe: true, transparent: true, opacity: 0.07 });
+    const torus = new THREE.Mesh(torusGeo, torusMat);
+    torus.position.set(12, -3, -10);
+    scene.add(torus);
+
+    const torus2Geo = new THREE.TorusGeometry(6, 0.3, 8, 48);
+    const torus2Mat = new THREE.MeshBasicMaterial({ color: 0xa855f7, wireframe: true, transparent: true, opacity: 0.06 });
+    const torus2 = new THREE.Mesh(torus2Geo, torus2Mat);
+    torus2.position.set(-14, 5, -12);
+    scene.add(torus2);
+
+    const icoGeo = new THREE.IcosahedronGeometry(5, 1);
+    const icoMat = new THREE.MeshBasicMaterial({ color: 0x06b6d4, wireframe: true, transparent: true, opacity: 0.06 });
+    const ico = new THREE.Mesh(icoGeo, icoMat);
+    ico.position.set(-10, -5, -8);
+    scene.add(ico);
+
+    const pGeo = new THREE.BufferGeometry();
+    const pArr = new Float32Array(400 * 3);
+    for (let i = 0; i < 400 * 3; i++) pArr[i] = (Math.random() - 0.5) * 50;
+    pGeo.setAttribute('position', new THREE.BufferAttribute(pArr, 3));
+    const pMat = new THREE.PointsMaterial({ size: 0.05, color: 0x818cf8, transparent: true, opacity: 0.5 });
+    const particles = new THREE.Points(pGeo, pMat);
+    scene.add(particles);
+
+    camera.position.z = 22;
+
+    let t = 0;
+    let mx = 0, my = 0;
+    document.addEventListener('mousemove', e => {
+        mx = (e.clientX / window.innerWidth - 0.5) * 0.3;
+        my = (e.clientY / window.innerHeight - 0.5) * 0.3;
+    });
+
+    function animate() {
+        requestAnimationFrame(animate);
+        t += 0.008;
+        torus.rotation.x += 0.003;
+        torus.rotation.y += 0.002;
+        torus2.rotation.y -= 0.004;
+        torus2.rotation.z += 0.002;
+        ico.rotation.x += 0.005;
+        ico.rotation.y += 0.003;
+        particles.rotation.y += 0.0005;
+        camera.position.x += (mx - camera.position.x) * 0.05;
+        camera.position.y += (-my - camera.position.y) * 0.05;
+        renderer.render(scene, camera);
+    }
+    animate();
+
+    window.addEventListener('resize', () => {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+})();
+
+// ─── MODAL ───
+function openGuide(title, guide) {
+    document.getElementById('modalTitle').innerText = title;
+    document.getElementById('modalBody').innerText = guide;
+    document.getElementById('guideModal').classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+}
+function closeGuide() {
+    document.getElementById('guideModal').classList.add('hidden');
+    document.body.style.overflow = '';
+}
+window.addEventListener('click', e => {
+    if (e.target === document.getElementById('guideModal')) closeGuide();
+});
+window.addEventListener('keydown', e => { if (e.key === 'Escape') closeGuide(); });
+
+
+// ─── COLUMN TASK COUNTS (live count via DOM) ───
+function updateCounts() {
+    ['col-todo','col-progress','col-done'].forEach(cls => {
+        const col = document.querySelector('.' + cls);
+        if (!col) return;
+        const count = col.querySelectorAll('.task-card').length;
+        const badge = col.querySelector('.col-count');
+        if (badge) badge.textContent = count;
+        
+        // Show/hide the empty state automatically!
+        const emptyState = col.querySelector('.col-empty');
+        if (emptyState) {
+            emptyState.style.display = count === 0 ? 'flex' : 'none';
+        }
+    });
+}
+updateCounts();
+
+// HTMX: re-inject theme and update counts after board refresh
+document.body.addEventListener('htmx:afterSwap', () => {
+    applyTheme(body.classList.contains('dark-mode'));
+    updateCounts(); // Make sure it counts the new tasks!
+});
+
+</script>
+
+{% endblock %}

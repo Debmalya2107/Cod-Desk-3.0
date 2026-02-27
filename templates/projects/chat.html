@@ -1,0 +1,278 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="relative min-h-[calc(100vh-100px)] flex flex-col pb-6">
+    
+    <!-- 3D Animated Background -->
+    <canvas id="chat-canvas" class="fixed inset-0 w-full h-full z-0 pointer-events-none opacity-15"></canvas>
+    
+    <!-- Ambient Gradient Orbs -->
+    <div class="fixed inset-0 pointer-events-none z-0">
+        <div class="absolute top-[-5%] right-[-5%] w-[400px] h-[400px] bg-blue-500/10 rounded-full blur-[100px] animate-pulse"></div>
+        <div class="absolute bottom-[-5%] left-[-5%] w-[400px] h-[400px] bg-purple-500/10 rounded-full blur-[100px] animate-pulse delay-1000"></div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="relative z-10 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 w-full flex flex-col h-[calc(100vh-120px)] animate-fade-in">
+        
+        <!-- Header Section -->
+        <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 gap-3 flex-shrink-0">
+            <div class="flex items-center gap-3">
+                <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center shadow-lg shadow-blue-500/30">
+                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
+                    </svg>
+                </div>
+                <div>
+                    <h1 class="text-3xl md:text-4xl font-black text-slate-900 dark:text-white tracking-tight">
+                        Team <span class="bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-purple-600">Chat</span>
+                    </h1>
+                    <p class="text-slate-500 dark:text-slate-400 text-sm flex items-center gap-2">
+                        <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                        {{ project.title }}
+                    </p>
+                </div>
+            </div>
+            
+            <a href="{% url 'board_view' project.id %}" class="group flex items-center gap-2 px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition-all duration-300 hover:scale-105 shadow-md text-sm">
+                <svg class="w-4 h-4 transition-transform group-hover:-translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                </svg>
+                Back to Board
+            </a>
+        </div>
+
+        <!-- Chat Container -->
+        <div class="relative flex-1 min-h-0 mb-4 group">
+            <div class="absolute -inset-0.5 bg-gradient-to-r from-blue-500/20 to-purple-500/20 rounded-3xl blur opacity-0 group-hover:opacity-100 transition duration-500"></div>
+            <div id="chat-container" 
+                 class="relative h-full bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border border-slate-200 dark:border-slate-700 rounded-3xl p-6 overflow-y-auto shadow-2xl"
+                 hx-get="{% url 'project_chat' project.id %}" 
+                 hx-trigger="every 3s"
+                 hx-swap="innerHTML scroll:bottom">
+                 
+                 {% include 'projects/chat_partial.html' %}
+            </div>
+            
+            <!-- Scroll to bottom button -->
+            <button onclick="scrollToBottom()" class="absolute bottom-4 right-4 w-10 h-10 bg-blue-600 hover:bg-blue-500 text-white rounded-full shadow-lg flex items-center justify-center transition-all duration-300 hover:scale-110 opacity-0 group-hover:opacity-100">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"></path>
+                </svg>
+            </button>
+        </div>
+
+        <!-- Message Input -->
+        <div class="relative flex-shrink-0">
+            <div class="absolute -inset-0.5 bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl blur opacity-20"></div>
+            <div class="relative bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl p-4 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-700">
+                <form method="POST" class="flex gap-3 items-end">
+                    {% csrf_token %}
+                    <div class="flex-1 relative">
+                        {{ form.content }}
+                        <div class="absolute bottom-3 right-3 text-xs text-slate-400 dark:text-slate-500 pointer-events-none" id="char-count">
+                            Press Enter to send
+                        </div>
+                    </div>
+                    <button type="submit" class="group bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-3 rounded-xl font-bold shadow-lg shadow-blue-500/30 hover:shadow-blue-500/50 transition-all duration-300 hover:scale-105 flex items-center gap-2 flex-shrink-0">
+                        <span class="hidden sm:inline">Send</span>
+                        <svg class="w-5 h-5 transition-transform group-hover:translate-x-1 group-hover:-translate-y-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path>
+                        </svg>
+                    </button>
+                </form>
+            </div>
+        </div>
+
+    </div>
+
+    <style>
+        /* Chat Container Scrollbar */
+        #chat-container::-webkit-scrollbar {
+            width: 8px;
+        }
+        #chat-container::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        #chat-container::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        #chat-container::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+        .dark #chat-container::-webkit-scrollbar-thumb {
+            background: #475569;
+        }
+        .dark #chat-container::-webkit-scrollbar-thumb:hover {
+            background: #64748b;
+        }
+
+        /* Form Input Styling */
+        input[type="text"], textarea { 
+            width: 100%; 
+            padding: 14px 16px; 
+            padding-right: 100px;
+            background: rgba(241, 245, 249, 0.8);
+            border: 2px solid #e2e8f0; 
+            border-radius: 12px; 
+            font-size: 15px;
+            transition: all 0.3s ease;
+            color: #1e293b;
+            resize: none;
+            min-height: 52px;
+            max-height: 120px;
+        }
+        .dark input[type="text"], .dark textarea {
+            background: rgba(30, 41, 59, 0.8);
+            border-color: #334155;
+            color: #f1f5f9;
+        }
+        input[type="text"]:focus, textarea:focus { 
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+            background: rgba(255, 255, 255, 0.9);
+        }
+        .dark input[type="text"]:focus, .dark textarea:focus {
+            background: rgba(30, 41, 59, 0.9);
+            box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.2);
+        }
+
+        /* Animations */
+        @keyframes fade-in {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .animate-fade-in { animation: fade-in 0.5s ease-out forwards; }
+    </style>
+
+    <script>
+        // 3D Background Animation
+        const initThreeJS = () => {
+            const canvas = document.getElementById('chat-canvas');
+            const scene = new THREE.Scene();
+            const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            const renderer = new THREE.WebGLRenderer({ canvas: canvas, alpha: true, antialias: true });
+            
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+            // Create floating particles - chat bubbles theme
+            const particlesGeometry = new THREE.BufferGeometry();
+            const particlesCount = 80;
+            const posArray = new Float32Array(particlesCount * 3);
+            const scaleArray = new Float32Array(particlesCount);
+            
+            for(let i = 0; i < particlesCount; i++) {
+                posArray[i * 3] = (Math.random() - 0.5) * 15;
+                posArray[i * 3 + 1] = (Math.random() - 0.5) * 15;
+                posArray[i * 3 + 2] = (Math.random() - 0.5) * 10;
+                scaleArray[i] = Math.random();
+            }
+            
+            particlesGeometry.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
+            particlesGeometry.setAttribute('scale', new THREE.BufferAttribute(scaleArray, 1));
+            
+            const material = new THREE.PointsMaterial({
+                size: 0.08,
+                color: 0x3b82f6,
+                transparent: true,
+                opacity: 0.4,
+                sizeAttenuation: true
+            });
+            
+            const particlesMesh = new THREE.Points(particlesGeometry, material);
+            scene.add(particlesMesh);
+
+            camera.position.z = 8;
+
+            // Mouse interaction
+            let mouseX = 0;
+            let mouseY = 0;
+            
+            document.addEventListener('mousemove', (event) => {
+                mouseX = (event.clientX / window.innerWidth) * 2 - 1;
+                mouseY = -(event.clientY / window.innerHeight) * 2 + 1;
+            });
+
+            const animate = () => {
+                requestAnimationFrame(animate);
+                
+                const time = Date.now() * 0.001;
+                
+                // Gentle floating animation
+                particlesMesh.rotation.y += 0.0003;
+                particlesMesh.rotation.x += mouseY * 0.0003;
+                particlesMesh.rotation.y += mouseX * 0.0003;
+                
+                // Subtle wave motion
+                const positions = particlesGeometry.attributes.position.array;
+                for(let i = 0; i < particlesCount; i++) {
+                    positions[i * 3 + 1] += Math.sin(time * 0.5 + i) * 0.002;
+                }
+                particlesGeometry.attributes.position.needsUpdate = true;
+                
+                renderer.render(scene, camera);
+            };
+            animate();
+
+            window.addEventListener('resize', () => {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            });
+        };
+        initThreeJS();
+
+        // Scroll to bottom function
+        function scrollToBottom() {
+            const container = document.getElementById('chat-container');
+            container.scrollTo({
+                top: container.scrollHeight,
+                behavior: 'smooth'
+            });
+        }
+
+        // Auto-scroll on load
+        document.addEventListener('DOMContentLoaded', () => {
+            setTimeout(scrollToBottom, 100);
+        });
+
+        // Character count and enter to send
+        const textarea = document.querySelector('textarea');
+        const charCount = document.getElementById('char-count');
+        
+        if (textarea) {
+            textarea.addEventListener('input', function() {
+                const length = this.value.length;
+                if (length > 0) {
+                    charCount.textContent = `${length} characters`;
+                } else {
+                    charCount.textContent = 'Press Enter to send';
+                }
+            });
+
+            textarea.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    this.closest('form').submit();
+                }
+            });
+        }
+
+        // HTMX after swap - smart scroll
+        document.body.addEventListener('htmx:afterSwap', function(evt) {
+            if(evt.detail.target.id === "chat-container") {
+                const container = document.getElementById('chat-container');
+                const isNearBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 100;
+                
+                if (isNearBottom) {
+                    scrollToBottom();
+                }
+            }
+        });
+    </script>
+</div>
+{% endblock %}

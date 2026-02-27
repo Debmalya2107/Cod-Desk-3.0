@@ -1,0 +1,747 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+
+<style>
+    /* ─── CSS VARIABLES FOR THEMING ─── */
+    :root {
+        --bg: #f8fafc;
+        --alt-bg: #f1f5f9;
+        --strip-bg: rgba(241,245,249,0.8);
+        --card-bg: #ffffff;
+        --glass-bg: rgba(255,255,255,0.5);
+        --chip-bg: rgba(255,255,255,0.6);
+        --heading-color: #0f172a;
+        --body-color: #1e293b;
+        --muted-color: #64748b;
+        --border-color: rgba(0,0,0,0.08);
+        --grid-color: rgba(0,0,0,0.04);
+    }
+
+    html.dark {
+        --bg: #050711;
+        --alt-bg: #0a0d1a;
+        --strip-bg: rgba(10,13,26,0.8);
+        --card-bg: rgba(255,255,255,0.03);
+        --glass-bg: rgba(255,255,255,0.04);
+        --chip-bg: rgba(255,255,255,0.05);
+        --heading-color: #f1f5f9;
+        --body-color: #e2e8f0;
+        --muted-color: #64748b;
+        --border-color: rgba(255,255,255,0.07);
+        --grid-color: rgba(255,255,255,0.03);
+    }
+
+    #app-container {
+        background-color: var(--bg);
+        color: var(--body-color);
+        transition: background-color 0.5s, color 0.5s;
+    }
+
+    /* ─── SCROLL ANIMATIONS ─── */
+    .sr-anim {
+        opacity: 0;
+        transform: translateY(24px);
+        transition: opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1), transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .sr-anim.visible {
+        opacity: 1;
+        transform: translateY(0);
+    }
+
+    /* Feature card hover */
+    .feature-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 20px 60px -10px rgba(99,102,241,0.15);
+    }
+
+    /* ─── KEYFRAMES ─── */
+    @keyframes shimmer {
+        0% { background-position: 0% 50%; }
+        100% { background-position: 200% 50%; }
+    }
+    @keyframes floatBlob1 {
+        0%, 100% { transform: translate(0, 0) scale(1); }
+        50% { transform: translate(30px, -20px) scale(1.05); }
+    }
+    @keyframes floatBlob2 {
+        0%, 100% { transform: translate(0, 0) scale(1); }
+        50% { transform: translate(-20px, 30px) scale(0.95); }
+    }
+    @keyframes pulse3d {
+        0%, 100% { transform: scale(1); opacity: 0.3; }
+        50% { transform: scale(1.2); opacity: 0.6; }
+    }
+    @keyframes scrollDot {
+        0% { opacity: 1; transform: translateY(0); }
+        100% { opacity: 0; transform: translateY(8px); }
+    }
+    @keyframes marquee {
+        from { transform: translateX(0); }
+        to { transform: translateX(-50%); }
+    }
+
+    html { scroll-behavior: smooth; }
+
+    /* ─── TOGGLE BUTTON ─── */
+    #theme-toggle {
+        width: 3.5rem;
+        height: 1.75rem;
+        border-radius: 999px;
+        position: relative;
+        cursor: pointer;
+        border: 1px solid;
+        transition: background 0.4s, border-color 0.4s;
+        box-shadow: 0 4px 14px rgba(0,0,0,0.15);
+    }
+    #toggle-knob {
+        position: absolute;
+        top: 2px;
+        left: 2px;
+        width: 1.4rem;
+        height: 1.4rem;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: transform 0.4s cubic-bezier(0.34,1.56,0.64,1), background 0.4s;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+    }
+    #toggle-knob svg {
+        width: 0.875rem;
+        height: 0.875rem;
+    }
+</style>
+
+<div id="app-container" class="relative min-h-screen overflow-x-hidden selection:bg-indigo-500 selection:text-white">
+
+    <!-- 3D Canvas Background -->
+    <canvas id="hero-canvas" class="fixed top-0 left-0 w-full h-full z-0 pointer-events-none" style="opacity: 0.25;"></canvas>
+
+    <!-- Noise Texture Overlay -->
+    <div class="fixed inset-0 z-0 pointer-events-none" style="background-image: url('data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22200%22 height=%22200%22><filter id=%22n%22><feTurbulence type=%22fractalNoise%22 baseFrequency=%220.65%22 numOctaves=%223%22 stitchTiles=%22stitch%22/><feColorMatrix type=%22saturate%22 values=%220%22/></filter><rect width=%22200%22 height=%22200%22 filter=%22url(%23n)%22 opacity=%220.04%22/></svg>'); opacity: 0.6;"></div>
+
+    <!-- ─── THEME TOGGLE ─── -->
+    <div class="fixed top-6 right-6 z-50">
+        <button id="theme-toggle" aria-label="Toggle dark mode">
+            <span id="toggle-knob">
+                <svg id="sun-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="display:none;">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path>
+                </svg>
+                <svg id="moon-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="display:block;">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path>
+                </svg>
+            </span>
+        </button>
+    </div>
+
+    <!-- ─── HERO SECTION ─── -->
+    <section class="relative z-10 min-h-screen flex items-center justify-center px-6 pt-20" id="hero">
+        <!-- Gradient blobs -->
+        <div class="absolute top-1/4 left-1/4 w-96 h-96 rounded-full pointer-events-none" style="background: radial-gradient(circle, rgba(99,102,241,0.15) 0%, transparent 70%); filter: blur(40px); animation: floatBlob1 8s ease-in-out infinite;"></div>
+        <div class="absolute bottom-1/4 right-1/4 w-80 h-80 rounded-full pointer-events-none" style="background: radial-gradient(circle, rgba(168,85,247,0.12) 0%, transparent 70%); filter: blur(40px); animation: floatBlob2 10s ease-in-out infinite;"></div>
+
+        <div class="container mx-auto text-center max-w-5xl">
+            <!-- Badge -->
+            <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full mb-8 sr-anim" style="background: rgba(99,102,241,0.1); border: 1px solid rgba(99,102,241,0.25);">
+                <span class="relative flex h-2 w-2">
+                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
+                    <span class="relative inline-flex rounded-full h-2 w-2 bg-indigo-500"></span>
+                </span>
+                <span style="font-family: 'Space Mono', monospace; font-size: 0.65rem; letter-spacing: 0.15em; color: #818cf8;" class="uppercase font-bold">
+                    StudentCollab v1.0 &mdash; Live Now
+                </span>
+            </div>
+
+            <!-- Headline -->
+            <h1 class="font-black tracking-tight mb-6 leading-none sr-anim" style="font-family: 'Syne', sans-serif; font-size: clamp(3.5rem, 10vw, 7rem);">
+                <span class="block" style="color: var(--heading-color);">Build Together.</span>
+                <span class="block" style="background: linear-gradient(135deg, #6366f1 0%, #a855f7 50%, #ec4899 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; animation: shimmer 4s linear infinite; background-size: 200%;">
+                    Securely.
+                </span>
+            </h1>
+
+            <!-- Subheadline -->
+            <p class="mt-4 mx-auto leading-relaxed sr-anim" style="font-size: clamp(1rem, 2.5vw, 1.25rem); color: var(--muted-color); max-width: 38rem;">
+                The ultimate platform for student developers. Find teammates, manage projects, and lock down your files with military-grade encryption — all in your browser.
+            </p>
+
+            <!-- CTA Buttons -->
+            <div class="mt-12 flex flex-col sm:flex-row justify-center gap-4 sr-anim">
+                <a href="{% url 'find_projects' %}"
+                   class="group relative px-8 py-4 text-white rounded-full font-bold text-lg overflow-hidden transition-all duration-300 hover:scale-105"
+                   style="background: linear-gradient(135deg, #4f46e5, #7c3aed); box-shadow: 0 0 40px -10px rgba(79,70,229,0.7); font-family: 'Syne', sans-serif;">
+                   <span class="relative z-10 flex items-center justify-center gap-2">
+                       Start a Project
+                       <svg class="w-5 h-5 transition-transform group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path></svg>
+                   </span>
+                   <div class="absolute inset-0 transition-opacity duration-300 opacity-0 group-hover:opacity-100" style="background: linear-gradient(135deg, #4338ca, #6d28d9);"></div>
+                </a>
+                <a href="#features" class="px-8 py-4 rounded-full font-bold text-lg transition-all duration-300 hover:scale-105 backdrop-blur-sm" style="border: 1px solid var(--border-color); color: var(--body-color); font-family: 'Syne', sans-serif; background: var(--glass-bg);">
+                    Explore Features ↓
+                </a>
+            </div>
+
+            <!-- Floating stat chips -->
+            <div class="mt-16 flex flex-wrap justify-center gap-4 sr-anim">
+                <div class="px-5 py-2.5 rounded-full text-sm font-bold backdrop-blur-md" style="background: var(--chip-bg); border: 1px solid var(--border-color); color: var(--muted-color); font-family: 'Space Mono', monospace;">AES-256 Encrypted</div>
+                <div class="px-5 py-2.5 rounded-full text-sm font-bold backdrop-blur-md" style="background: var(--chip-bg); border: 1px solid var(--border-color); color: var(--muted-color); font-family: 'Space Mono', monospace;">Zero Server Trust</div>
+                <div class="px-5 py-2.5 rounded-full text-sm font-bold backdrop-blur-md" style="background: var(--chip-bg); border: 1px solid var(--border-color); color: var(--muted-color); font-family: 'Space Mono', monospace;">HTMX Powered</div>
+            </div>
+        </div>
+
+        <!-- Scroll Indicator -->
+        <div class="absolute bottom-10 left-1/2 -translate-x-1/2 animate-bounce">
+            <div class="w-6 h-10 rounded-full border-2 flex items-start justify-center pt-2" style="border-color: var(--muted-color);">
+                <div class="w-1 h-2 rounded-full" style="background: var(--muted-color); animation: scrollDot 2s ease-in-out infinite;"></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ─── STATS STRIP ─── -->
+    <section class="relative z-10 py-12 px-6" style="border-top: 1px solid var(--border-color); border-bottom: 1px solid var(--border-color); background: var(--strip-bg);">
+        <div class="container mx-auto max-w-5xl">
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
+                <div class="sr-anim">
+                    <div class="font-black text-4xl mb-1" style="font-family: 'Syne', sans-serif; background: linear-gradient(135deg, #6366f1, #a855f7); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">E2EE</div>
+                    <div class="text-sm" style="color: var(--muted-color); font-family: 'Space Mono', monospace;">Browser-Side Only</div>
+                </div>
+                <div class="sr-anim">
+                    <div class="font-black text-4xl mb-1" style="font-family: 'Syne', sans-serif; background: linear-gradient(135deg, #a855f7, #ec4899); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">0 KB</div>
+                    <div class="text-sm" style="color: var(--muted-color); font-family: 'Space Mono', monospace;">Server-Side Key Storage</div>
+                </div>
+                <div class="sr-anim">
+                    <div class="font-black text-4xl mb-1" style="font-family: 'Syne', sans-serif; background: linear-gradient(135deg, #ec4899, #f97316); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">∞</div>
+                    <div class="text-sm" style="color: var(--muted-color); font-family: 'Space Mono', monospace;">Project Workspaces</div>
+                </div>
+                <div class="sr-anim">
+                    <div class="font-black text-4xl mb-1" style="font-family: 'Syne', sans-serif; background: linear-gradient(135deg, #10b981, #6366f1); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">AI</div>
+                    <div class="text-sm" style="color: var(--muted-color); font-family: 'Space Mono', monospace;">Gemini Integration Ready</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ─── FEATURES GRID SECTION ─── -->
+    <section id="features" class="relative z-10 py-28 px-6">
+        <div class="container mx-auto max-w-7xl">
+            <div class="text-center mb-20 sr-anim">
+                <p class="text-sm font-bold tracking-widest uppercase mb-3" style="color: #818cf8; font-family: 'Space Mono', monospace;">// The Toolkit</p>
+                <h2 class="font-black" style="font-family: 'Syne', sans-serif; font-size: clamp(2rem, 5vw, 3.5rem); color: var(--heading-color);">
+                    Everything you need to ship.
+                </h2>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <!-- Feature Card 1 -->
+                <div class="group relative rounded-3xl p-8 sr-anim feature-card overflow-hidden" style="background: var(--card-bg); border: 1px solid var(--border-color); transition: border-color 0.4s, transform 0.4s, box-shadow 0.4s;">
+                    <div class="absolute inset-0 rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" style="background: radial-gradient(circle at 50% 0%, rgba(99,102,241,0.08) 0%, transparent 70%);"></div>
+                    <div class="absolute top-0 left-0 right-0 h-px opacity-0 group-hover:opacity-100 transition-opacity duration-500" style="background: linear-gradient(90deg, transparent, #6366f1, transparent);"></div>
+                    <div class="relative w-14 h-14 rounded-2xl flex items-center justify-center mb-6 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-3" style="background: linear-gradient(135deg, rgba(99,102,241,0.15), rgba(99,102,241,0.05)); border: 1px solid rgba(99,102,241,0.3);">
+                        <svg class="w-7 h-7" style="color: #818cf8;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+                    </div>
+                    <h3 class="text-xl font-bold mb-3" style="font-family: 'Syne', sans-serif; color: var(--heading-color);">Zero-Knowledge Vault</h3>
+                    <p class="leading-relaxed mb-5 text-sm" style="color: var(--muted-color);">End-to-End Encryption in the browser. The server stores only scrambled <code style="font-family: 'Space Mono'; font-size: 0.75rem; color: #818cf8;">.enc</code> blobs. Not even admins can peek.</p>
+                    <ul class="space-y-2">
+                        <li class="flex items-center gap-2 text-sm" style="color: var(--muted-color);"><span class="w-1.5 h-1.5 rounded-full flex-shrink-0" style="background: #6366f1;"></span>In-Memory Decryption</li>
+                        <li class="flex items-center gap-2 text-sm" style="color: var(--muted-color);"><span class="w-1.5 h-1.5 rounded-full flex-shrink-0" style="background: #6366f1;"></span>Owner Access Control</li>
+                        <li class="flex items-center gap-2 text-sm" style="color: var(--muted-color);"><span class="w-1.5 h-1.5 rounded-full flex-shrink-0" style="background: #6366f1;"></span>Custom Display Names</li>
+                    </ul>
+                </div>
+
+                <!-- Feature Card 2 -->
+                <div class="group relative rounded-3xl p-8 sr-anim feature-card overflow-hidden" style="background: linear-gradient(135deg, rgba(99,102,241,0.12) 0%, rgba(168,85,247,0.08) 100%); border: 1px solid rgba(99,102,241,0.3);">
+                    <div class="absolute inset-0 rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" style="background: radial-gradient(circle at 50% 0%, rgba(168,85,247,0.1) 0%, transparent 70%);"></div>
+                    <div class="absolute top-0 left-0 right-0 h-px" style="background: linear-gradient(90deg, transparent, #a855f7, transparent); opacity: 0.6;"></div>
+                    <div class="absolute -top-12 -right-12 w-40 h-40 rounded-full" style="background: radial-gradient(circle, rgba(168,85,247,0.15) 0%, transparent 70%); animation: pulse3d 4s ease-in-out infinite;"></div>
+                    <div class="relative w-14 h-14 rounded-2xl flex items-center justify-center mb-6 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-3" style="background: linear-gradient(135deg, rgba(168,85,247,0.2), rgba(168,85,247,0.05)); border: 1px solid rgba(168,85,247,0.4);">
+                        <svg class="w-7 h-7" style="color: #c084fc;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
+                    </div>
+                    <div class="inline-block px-2 py-0.5 rounded text-xs font-bold mb-3" style="background: rgba(168,85,247,0.15); color: #c084fc; font-family: 'Space Mono', monospace;">Featured</div>
+                    <h3 class="text-xl font-bold mb-3" style="font-family: 'Syne', sans-serif; color: var(--heading-color);">Developer Identities</h3>
+                    <p class="leading-relaxed mb-5 text-sm" style="color: var(--muted-color);">Your portfolio, reimagined. Showcase skills with dynamic tags, project history, and custom bios that set you apart.</p>
+                    <ul class="space-y-2">
+                        <li class="flex items-center gap-2 text-sm" style="color: var(--muted-color);"><span class="w-1.5 h-1.5 rounded-full flex-shrink-0" style="background: #a855f7;"></span>Skill Tagging Engine</li>
+                        <li class="flex items-center gap-2 text-sm" style="color: var(--muted-color);"><span class="w-1.5 h-1.5 rounded-full flex-shrink-0" style="background: #a855f7;"></span>My Projects Dashboard</li>
+                        <li class="flex items-center gap-2 text-sm" style="color: var(--muted-color);"><span class="w-1.5 h-1.5 rounded-full flex-shrink-0" style="background: #a855f7;"></span>Smart Onboarding</li>
+                    </ul>
+                </div>
+
+                <!-- Feature Card 3 -->
+                <div class="group relative rounded-3xl p-8 sr-anim feature-card overflow-hidden" style="background: var(--card-bg); border: 1px solid var(--border-color); transition: border-color 0.4s, transform 0.4s, box-shadow 0.4s;">
+                    <div class="absolute inset-0 rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" style="background: radial-gradient(circle at 50% 0%, rgba(16,185,129,0.08) 0%, transparent 70%);"></div>
+                    <div class="absolute top-0 left-0 right-0 h-px opacity-0 group-hover:opacity-100 transition-opacity duration-500" style="background: linear-gradient(90deg, transparent, #10b981, transparent);"></div>
+                    <div class="relative w-14 h-14 rounded-2xl flex items-center justify-center mb-6 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-3" style="background: linear-gradient(135deg, rgba(16,185,129,0.15), rgba(16,185,129,0.05)); border: 1px solid rgba(16,185,129,0.3);">
+                        <svg class="w-7 h-7" style="color: #34d399;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+                    </div>
+                    <h3 class="text-xl font-bold mb-3" style="font-family: 'Syne', sans-serif; color: var(--heading-color);">Project Hubs</h3>
+                    <p class="leading-relaxed mb-5 text-sm" style="color: var(--muted-color);">Dedicated workspaces for every idea. Pre-configured for AI integration and real-time collaboration from day one.</p>
+                    <ul class="space-y-2">
+                        <li class="flex items-center gap-2 text-sm" style="color: var(--muted-color);"><span class="w-1.5 h-1.5 rounded-full flex-shrink-0" style="background: #10b981;"></span>AI-Ready Infrastructure</li>
+                        <li class="flex items-center gap-2 text-sm" style="color: var(--muted-color);"><span class="w-1.5 h-1.5 rounded-full flex-shrink-0" style="background: #10b981;"></span>Ownership Tracking</li>
+                        <li class="flex items-center gap-2 text-sm" style="color: var(--muted-color);"><span class="w-1.5 h-1.5 rounded-full flex-shrink-0" style="background: #10b981;"></span>Gemini API Integration</li>
+                    </ul>
+                </div>
+
+                <!-- Feature Card 4 - Full Width -->
+                <div class="group relative rounded-3xl p-8 sr-anim feature-card overflow-hidden md:col-span-3" style="background: var(--card-bg); border: 1px solid var(--border-color); transition: border-color 0.4s, transform 0.4s, box-shadow 0.4s;">
+                    <div class="absolute inset-0 rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" style="background: radial-gradient(ellipse at 50% 0%, rgba(245,158,11,0.05) 0%, transparent 60%);"></div>
+                    <div class="md:grid md:grid-cols-2 md:gap-12 md:items-center">
+                        <div>
+                            <div class="w-14 h-14 rounded-2xl flex items-center justify-center mb-6 transition-transform duration-300 group-hover:scale-110" style="background: linear-gradient(135deg, rgba(245,158,11,0.15), rgba(245,158,11,0.05)); border: 1px solid rgba(245,158,11,0.3);">
+                                <svg class="w-7 h-7" style="color: #fbbf24;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                            </div>
+                            <h3 class="text-xl font-bold mb-3" style="font-family: 'Syne', sans-serif; color: var(--heading-color);">Blazing Fast UX</h3>
+                            <p class="leading-relaxed text-sm" style="color: var(--muted-color);">Every interaction feels instant. Glassmorphism UI with HTMX for reload-free updates, async encryption feedback, and fully responsive layouts that look stunning on any device.</p>
+                        </div>
+                        <div class="mt-6 md:mt-0 flex flex-wrap gap-3">
+                            <span class="px-3 py-1.5 rounded-lg text-xs font-bold" style="background: rgba(245,158,11,0.1); color: #fbbf24; font-family: 'Space Mono', monospace; border: 1px solid rgba(245,158,11,0.2);">Glassmorphism UI</span>
+                            <span class="px-3 py-1.5 rounded-lg text-xs font-bold" style="background: rgba(99,102,241,0.1); color: #818cf8; font-family: 'Space Mono', monospace; border: 1px solid rgba(99,102,241,0.2);">Tailwind CSS</span>
+                            <span class="px-3 py-1.5 rounded-lg text-xs font-bold" style="background: rgba(16,185,129,0.1); color: #34d399; font-family: 'Space Mono', monospace; border: 1px solid rgba(16,185,129,0.2);">HTMX Integrated</span>
+                            <span class="px-3 py-1.5 rounded-lg text-xs font-bold" style="background: rgba(168,85,247,0.1); color: #c084fc; font-family: 'Space Mono', monospace; border: 1px solid rgba(168,85,247,0.2);">Async Feedback</span>
+                            <span class="px-3 py-1.5 rounded-lg text-xs font-bold" style="background: rgba(236,72,153,0.1); color: #f472b6; font-family: 'Space Mono', monospace; border: 1px solid rgba(236,72,153,0.2);">Responsive Design</span>
+                            <span class="px-3 py-1.5 rounded-lg text-xs font-bold" style="background: rgba(245,158,11,0.1); color: #fbbf24; font-family: 'Space Mono', monospace; border: 1px solid rgba(245,158,11,0.2);">Django Backend</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ─── HOW IT WORKS SECTION ─── -->
+    <section id="how-it-works" class="relative z-10 py-28 px-6" style="background: var(--alt-bg);">
+        <div class="container mx-auto max-w-6xl">
+            <div class="text-center mb-20 sr-anim">
+                <p class="text-sm font-bold tracking-widest uppercase mb-3" style="color: #818cf8; font-family: 'Space Mono', monospace;">// The Process</p>
+                <h2 class="font-black" style="font-family: 'Syne', sans-serif; font-size: clamp(2rem, 5vw, 3.5rem); color: var(--heading-color);">From idea to shipped. Fast.</h2>
+            </div>
+
+            <div class="grid md:grid-cols-3 gap-8 relative">
+                <div class="hidden md:block absolute top-10 left-[calc(16.67%+2rem)] right-[calc(16.67%+2rem)] h-px" style="background: linear-gradient(90deg, #6366f1, #a855f7, #10b981);"></div>
+
+                <div class="relative sr-anim">
+                    <div class="w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6" style="background: linear-gradient(135deg, #4f46e5, #7c3aed); box-shadow: 0 0 30px rgba(99,102,241,0.3);">
+                        <span class="font-black text-2xl text-white" style="font-family: 'Syne', sans-serif;">01</span>
+                    </div>
+                    <h3 class="text-xl font-bold text-center mb-3" style="font-family: 'Syne', sans-serif; color: var(--heading-color);">Create a Project</h3>
+                    <p class="text-center text-sm" style="color: var(--muted-color);">Spin up a workspace with a title, description, and Gemini API key for AI-assisted collaboration.</p>
+                </div>
+
+                <div class="relative sr-anim">
+                    <div class="w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6" style="background: linear-gradient(135deg, #7c3aed, #a855f7); box-shadow: 0 0 30px rgba(168,85,247,0.3);">
+                        <span class="font-black text-2xl text-white" style="font-family: 'Syne', sans-serif;">02</span>
+                    </div>
+                    <h3 class="text-xl font-bold text-center mb-3" style="font-family: 'Syne', sans-serif; color: var(--heading-color);">Find Your Team</h3>
+                    <p class="text-center text-sm" style="color: var(--muted-color);">Browse profiles by skills. Python, React, UI/UX — find exactly who your project needs with the skill tagging system.</p>
+                </div>
+
+                <div class="relative sr-anim">
+                    <div class="w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6" style="background: linear-gradient(135deg, #059669, #10b981); box-shadow: 0 0 30px rgba(16,185,129,0.3);">
+                        <span class="font-black text-2xl text-white" style="font-family: 'Syne', sans-serif;">03</span>
+                    </div>
+                    <h3 class="text-xl font-bold text-center mb-3" style="font-family: 'Syne', sans-serif; color: var(--heading-color);">Ship Securely</h3>
+                    <p class="text-center text-sm" style="color: var(--muted-color);">Upload files to the encrypted vault. Collaborate with confidence knowing zero data is readable by the server.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ─── SECURITY DEEP DIVE SECTION ─── -->
+    <section class="relative z-10 py-28 px-6 overflow-hidden">
+        <div class="absolute -left-32 top-0 bottom-0 w-96 pointer-events-none" style="background: radial-gradient(ellipse at left, rgba(99,102,241,0.08) 0%, transparent 70%);"></div>
+        <div class="container mx-auto max-w-6xl">
+            <div class="grid md:grid-cols-2 gap-16 items-center">
+                <div class="sr-anim">
+                    <p class="text-sm font-bold tracking-widest uppercase mb-3" style="color: #818cf8; font-family: 'Space Mono', monospace;">// Security First</p>
+                    <h3 class="font-black mb-6" style="font-family: 'Syne', sans-serif; font-size: clamp(2rem, 4vw, 3rem); color: var(--heading-color);">
+                        Encrypted in your browser.<br>
+                        <span style="color: var(--muted-color);">Invisible to everyone else.</span>
+                    </h3>
+                    <p class="text-lg leading-relaxed mb-8" style="color: var(--muted-color);">
+                        We can't read your files. Even if we wanted to. Your data is encrypted locally using AES-256 before it ever leaves your device. The server receives nothing but scrambled noise.
+                    </p>
+                    <div class="space-y-4">
+                        <div class="flex items-start gap-4 p-4 rounded-2xl" style="background: var(--card-bg); border: 1px solid var(--border-color);">
+                            <div class="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5" style="background: rgba(16,185,129,0.15);">
+                                <svg class="w-5 h-5" style="color: #10b981;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                            </div>
+                            <div>
+                                <p class="font-bold text-sm mb-1" style="color: var(--heading-color); font-family: 'Syne', sans-serif;">Client-Side E2EE</p>
+                                <p class="text-xs" style="color: var(--muted-color);">Encryption happens in your browser using the Web Crypto API. Keys never leave your device.</p>
+                            </div>
+                        </div>
+                        <div class="flex items-start gap-4 p-4 rounded-2xl" style="background: var(--card-bg); border: 1px solid var(--border-color);">
+                            <div class="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5" style="background: rgba(99,102,241,0.15);">
+                                <svg class="w-5 h-5" style="color: #6366f1;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+                            </div>
+                            <div>
+                                <p class="font-bold text-sm mb-1" style="color: var(--heading-color); font-family: 'Syne', sans-serif;">Zero Server Trust</p>
+                                <p class="text-xs" style="color: var(--muted-color);">The server only receives and stores encrypted blobs. Database admins cannot access file content.</p>
+                            </div>
+                        </div>
+                        <div class="flex items-start gap-4 p-4 rounded-2xl" style="background: var(--card-bg); border: 1px solid var(--border-color);">
+                            <div class="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5" style="background: rgba(168,85,247,0.15);">
+                                <svg class="w-5 h-5" style="color: #a855f7;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 3H5a2 2 0 00-2 2v4m6-6h10a2 2 0 012 2v4M9 3v18m0 0h10a2 2 0 002-2V9M9 21H5a2 2 0 01-2-2V9m0 0h18"></path></svg>
+                            </div>
+                            <div>
+                                <p class="font-bold text-sm mb-1" style="color: var(--heading-color); font-family: 'Syne', sans-serif;">In-Memory Decryption</p>
+                                <p class="text-xs" style="color: var(--muted-color);">Files decrypt in RAM and download natively. Zero decrypted traces remain on the server.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Animated Terminal -->
+                <div class="relative sr-anim">
+                    <div class="absolute -inset-3 rounded-2xl blur-xl opacity-40 animate-pulse" style="background: linear-gradient(135deg, #6366f1, #a855f7);"></div>
+                    <div class="relative rounded-2xl overflow-hidden shadow-2xl" style="background: #0d0d1a; border: 1px solid rgba(99,102,241,0.3);">
+                        <div class="flex items-center gap-2 px-5 py-3" style="background: rgba(255,255,255,0.03); border-bottom: 1px solid rgba(255,255,255,0.06);">
+                            <div class="w-3 h-3 rounded-full" style="background: #ff5f57;"></div>
+                            <div class="w-3 h-3 rounded-full" style="background: #ffbd2e;"></div>
+                            <div class="w-3 h-3 rounded-full" style="background: #27c93f;"></div>
+                            <span class="ml-3 text-xs" style="color: #4a4a6a; font-family: 'Space Mono', monospace;">vault_encryption.js</span>
+                        </div>
+                        <div class="p-6 font-mono text-sm space-y-1.5" style="min-height: 300px;">
+                            <p style="color: #4a4a6a;">// Zero-Knowledge Vault — E2EE Implementation</p>
+                            <p class="mt-3"><span style="color: #c084fc;">const</span> <span style="color: #e2e8f0;">file</span> = <span style="color: #fbbf24;">await</span> <span style="color: #34d399;">readFileFromDisk</span>();</p>
+                            <p><span style="color: #c084fc;">const</span> <span style="color: #e2e8f0;">key</span> = <span style="color: #fbbf24;">await</span> <span style="color: #34d399;">generateAESKey</span>(<span style="color: #f97316;">256</span>);</p>
+                            <p><span style="color: #c084fc;">const</span> <span style="color: #e2e8f0;">iv</span> = <span style="color: #34d399;">crypto.getRandomValues</span>(<span style="color: #818cf8;">new Uint8Array</span>(<span style="color: #f97316;">12</span>));</p>
+                            <p class="mt-2" style="color: #4a4a6a;">// File never leaves browser unencrypted</p>
+                            <p><span style="color: #c084fc;">const</span> <span style="color: #e2e8f0;">encrypted</span> = <span style="color: #fbbf24;">await</span> <span style="color: #34d399;">crypto.subtle.encrypt</span>({</p>
+                            <p class="pl-4"><span style="color: #e2e8f0;">name:</span> <span style="color: #86efac;">"AES-GCM"</span>, iv }, key, file);</p>
+                            <p class="mt-2">
+                                <span style="color: #fbbf24;">▶</span>
+                                <span style="color: #e2e8f0;" id="terminal-status"> Encrypting chunks... <span class="animate-pulse">█</span></span>
+                            </p>
+                            <p id="terminal-done" style="color: #4ade80; display:none;">✓ Blob encrypted (AES-256-GCM)</p>
+                            <p id="terminal-upload" style="color: #4a4a6a; display:none;">// Uploading to server...</p>
+                            <p id="terminal-server" style="color: #818cf8; display:none;">Server: Received .enc blob (2.1 KB)</p>
+                            <p id="terminal-deny" style="color: #f87171; display:none;">Server: ✗ Cannot read content. Key unknown.</p>
+                            <p id="terminal-safe" style="color: #4ade80; display:none;">✓ Zero-knowledge transfer complete.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ─── SKILL MATCHMAKING SECTION ─── -->
+    <section class="relative z-10 py-28 px-6 overflow-hidden" style="background: var(--alt-bg);">
+        <div class="container mx-auto max-w-6xl">
+            <div class="grid md:grid-cols-2 gap-16 items-center">
+                <!-- Profile Card Visual -->
+                <div class="relative sr-anim order-2 md:order-1">
+                    <div class="absolute -inset-3 rounded-3xl blur-xl opacity-20 animate-pulse" style="background: linear-gradient(135deg, #a855f7, #6366f1);"></div>
+                    <div class="relative rounded-3xl p-6" style="background: var(--card-bg); border: 1px solid var(--border-color);">
+                        <div class="flex items-center gap-4 mb-6">
+                            <div class="w-14 h-14 rounded-2xl flex items-center justify-center text-2xl font-black text-white" style="background: linear-gradient(135deg, #6366f1, #a855f7); font-family: 'Syne', sans-serif;">A</div>
+                            <div>
+                                <p class="font-bold" style="color: var(--heading-color); font-family: 'Syne', sans-serif;">Alex Chen</p>
+                                <p class="text-sm" style="color: var(--muted-color); font-family: 'Space Mono', monospace;">Full-Stack Developer</p>
+                            </div>
+                            <div class="ml-auto px-3 py-1 rounded-full text-xs font-bold" style="background: rgba(16,185,129,0.15); color: #10b981; border: 1px solid rgba(16,185,129,0.3);">Open to collab</div>
+                        </div>
+                        <div class="mb-5 p-4 rounded-2xl" style="background: var(--alt-bg); border: 1px solid var(--border-color);">
+                            <p class="text-sm leading-relaxed" style="color: var(--muted-color);">Building the future of decentralized apps. Looking for a UI/UX designer for my latest open-source project.</p>
+                        </div>
+                        <div class="flex flex-wrap gap-2 mb-6">
+                            <span class="px-3 py-1 rounded-lg text-xs font-bold" style="background: rgba(99,102,241,0.12); color: #818cf8; border: 1px solid rgba(99,102,241,0.2); font-family: 'Space Mono', monospace;">React</span>
+                            <span class="px-3 py-1 rounded-lg text-xs font-bold" style="background: rgba(245,158,11,0.12); color: #fbbf24; border: 1px solid rgba(245,158,11,0.2); font-family: 'Space Mono', monospace;">Python</span>
+                            <span class="px-3 py-1 rounded-lg text-xs font-bold" style="background: rgba(168,85,247,0.12); color: #c084fc; border: 1px solid rgba(168,85,247,0.2); font-family: 'Space Mono', monospace;">Django</span>
+                            <span class="px-3 py-1 rounded-lg text-xs font-bold" style="background: rgba(16,185,129,0.12); color: #34d399; border: 1px solid rgba(16,185,129,0.2); font-family: 'Space Mono', monospace;">Web3</span>
+                            <span class="px-3 py-1 rounded-lg text-xs font-bold" style="background: rgba(236,72,153,0.12); color: #f472b6; border: 1px solid rgba(236,72,153,0.2); font-family: 'Space Mono', monospace;">Tailwind</span>
+                        </div>
+                        <div style="border-top: 1px solid var(--border-color);" class="pt-4">
+                            <p class="text-xs mb-3 font-bold" style="color: var(--muted-color); font-family: 'Space Mono', monospace;">MY PROJECTS</p>
+                            <div class="space-y-2">
+                                <div class="flex items-center justify-between p-3 rounded-xl" style="background: var(--alt-bg);">
+                                    <span class="text-sm font-bold" style="color: var(--heading-color); font-family: 'Syne', sans-serif;">StudentCollab</span>
+                                    <span class="text-xs" style="color: #10b981; font-family: 'Space Mono', monospace;">Founder</span>
+                                </div>
+                                <div class="flex items-center justify-between p-3 rounded-xl" style="background: var(--alt-bg);">
+                                    <span class="text-sm font-bold" style="color: var(--heading-color); font-family: 'Syne', sans-serif;">OpenVault</span>
+                                    <span class="text-xs" style="color: #818cf8; font-family: 'Space Mono', monospace;">Member</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="order-1 md:order-2 sr-anim">
+                    <p class="text-sm font-bold tracking-widest uppercase mb-3" style="color: #818cf8; font-family: 'Space Mono', monospace;">// Your Identity</p>
+                    <h3 class="font-black mb-6" style="font-family: 'Syne', sans-serif; font-size: clamp(2rem, 4vw, 3rem); color: var(--heading-color);">
+                        Your portfolio.<br>
+                        <span style="color: var(--muted-color);">Supercharged.</span>
+                    </h3>
+                    <p class="text-lg leading-relaxed mb-8" style="color: var(--muted-color);">
+                        Every student developer gets a dynamic profile. Show off your skills, link your projects, and get discovered by teams looking for exactly your stack.
+                    </p>
+                    <div class="space-y-4">
+                        <div class="flex items-center gap-3">
+                            <div class="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0" style="background: rgba(99,102,241,0.15); border: 1px solid rgba(99,102,241,0.3);">
+                                <svg class="w-4 h-4" style="color: #818cf8;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                            </div>
+                            <span class="text-sm" style="color: var(--muted-color);">Dynamic skill tags (Python, React, UI/UX, and more)</span>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <div class="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0" style="background: rgba(99,102,241,0.15); border: 1px solid rgba(99,102,241,0.3);">
+                                <svg class="w-4 h-4" style="color: #818cf8;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                            </div>
+                            <span class="text-sm" style="color: var(--muted-color);">Auto-generated project portfolio from your contributions</span>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <div class="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0" style="background: rgba(99,102,241,0.15); border: 1px solid rgba(99,102,241,0.3);">
+                                <svg class="w-4 h-4" style="color: #818cf8;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                            </div>
+                            <span class="text-sm" style="color: var(--muted-color);">Custom avatar, bio, and personal website link</span>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <div class="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0" style="background: rgba(99,102,241,0.15); border: 1px solid rgba(99,102,241,0.3);">
+                                <svg class="w-4 h-4" style="color: #818cf8;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                            </div>
+                            <span class="text-sm" style="color: var(--muted-color);">Smart onboarding that sets up your skills in minutes</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ─── TECH STACK MARQUEE ─── -->
+    <section class="relative z-10 py-16 px-6 overflow-hidden" style="border-top: 1px solid var(--border-color); border-bottom: 1px solid var(--border-color);">
+        <p class="text-center text-xs font-bold tracking-widest uppercase mb-8" style="color: var(--muted-color); font-family: 'Space Mono', monospace;">// Built with industry-grade technologies</p>
+        <div style="overflow: hidden; mask-image: linear-gradient(90deg, transparent, black 10%, black 90%, transparent); -webkit-mask-image: linear-gradient(90deg, transparent, black 10%, black 90%, transparent);">
+            <div class="flex gap-12 items-center" style="animation: marquee 20s linear infinite; width: max-content;">
+                <span class="text-2xl font-black whitespace-nowrap" style="color: var(--muted-color); font-family: 'Syne', sans-serif; opacity: 0.5;">Django</span>
+                <span class="w-1.5 h-1.5 rounded-full flex-shrink-0" style="background: var(--muted-color); opacity: 0.3;"></span>
+                <span class="text-2xl font-black whitespace-nowrap" style="color: var(--muted-color); font-family: 'Syne', sans-serif; opacity: 0.5;">Tailwind CSS</span>
+                <span class="w-1.5 h-1.5 rounded-full flex-shrink-0" style="background: var(--muted-color); opacity: 0.3;"></span>
+                <span class="text-2xl font-black whitespace-nowrap" style="color: var(--muted-color); font-family: 'Syne', sans-serif; opacity: 0.5;">HTMX</span>
+                <span class="w-1.5 h-1.5 rounded-full flex-shrink-0" style="background: var(--muted-color); opacity: 0.3;"></span>
+                <span class="text-2xl font-black whitespace-nowrap" style="color: var(--muted-color); font-family: 'Syne', sans-serif; opacity: 0.5;">AES-256 Crypto</span>
+                <span class="w-1.5 h-1.5 rounded-full flex-shrink-0" style="background: var(--muted-color); opacity: 0.3;"></span>
+                <span class="text-2xl font-black whitespace-nowrap" style="color: var(--muted-color); font-family: 'Syne', sans-serif; opacity: 0.5;">Web Crypto API</span>
+                <span class="w-1.5 h-1.5 rounded-full flex-shrink-0" style="background: var(--muted-color); opacity: 0.3;"></span>
+                <span class="text-2xl font-black whitespace-nowrap" style="color: var(--muted-color); font-family: 'Syne', sans-serif; opacity: 0.5;">Three.js</span>
+                <span class="w-1.5 h-1.5 rounded-full flex-shrink-0" style="background: var(--muted-color); opacity: 0.3;"></span>
+                <span class="text-2xl font-black whitespace-nowrap" style="color: var(--muted-color); font-family: 'Syne', sans-serif; opacity: 0.5;">Gemini AI</span>
+                <span class="w-1.5 h-1.5 rounded-full flex-shrink-0" style="background: var(--muted-color); opacity: 0.3;"></span>
+                <!-- Duplicate for seamless loop -->
+                <span class="text-2xl font-black whitespace-nowrap" style="color: var(--muted-color); font-family: 'Syne', sans-serif; opacity: 0.5;">Django</span>
+                <span class="w-1.5 h-1.5 rounded-full flex-shrink-0" style="background: var(--muted-color); opacity: 0.3;"></span>
+                <span class="text-2xl font-black whitespace-nowrap" style="color: var(--muted-color); font-family: 'Syne', sans-serif; opacity: 0.5;">Tailwind CSS</span>
+                <span class="w-1.5 h-1.5 rounded-full flex-shrink-0" style="background: var(--muted-color); opacity: 0.3;"></span>
+                <span class="text-2xl font-black whitespace-nowrap" style="color: var(--muted-color); font-family: 'Syne', sans-serif; opacity: 0.5;">HTMX</span>
+                <span class="w-1.5 h-1.5 rounded-full flex-shrink-0" style="background: var(--muted-color); opacity: 0.3;"></span>
+                <span class="text-2xl font-black whitespace-nowrap" style="color: var(--muted-color); font-family: 'Syne', sans-serif; opacity: 0.5;">AES-256 Crypto</span>
+                <span class="w-1.5 h-1.5 rounded-full flex-shrink-0" style="background: var(--muted-color); opacity: 0.3;"></span>
+                <span class="text-2xl font-black whitespace-nowrap" style="color: var(--muted-color); font-family: 'Syne', sans-serif; opacity: 0.5;">Web Crypto API</span>
+                <span class="w-1.5 h-1.5 rounded-full flex-shrink-0" style="background: var(--muted-color); opacity: 0.3;"></span>
+                <span class="text-2xl font-black whitespace-nowrap" style="color: var(--muted-color); font-family: 'Syne', sans-serif; opacity: 0.5;">Three.js</span>
+                <span class="w-1.5 h-1.5 rounded-full flex-shrink-0" style="background: var(--muted-color); opacity: 0.3;"></span>
+                <span class="text-2xl font-black whitespace-nowrap" style="color: var(--muted-color); font-family: 'Syne', sans-serif; opacity: 0.5;">Gemini AI</span>
+            </div>
+        </div>
+    </section>
+
+    <!-- ─── CTA SECTION ─── -->
+    <section class="relative z-10 py-32 px-6 overflow-hidden">
+        <div class="absolute inset-0 pointer-events-none" style="background: radial-gradient(ellipse at 50% 50%, rgba(99,102,241,0.08) 0%, transparent 70%);"></div>
+        <div class="absolute inset-0 pointer-events-none" style="background-image: linear-gradient(var(--grid-color) 1px, transparent 1px), linear-gradient(90deg, var(--grid-color) 1px, transparent 1px); background-size: 60px 60px; mask-image: radial-gradient(ellipse at center, black 30%, transparent 70%); -webkit-mask-image: radial-gradient(ellipse at center, black 30%, transparent 70%);"></div>
+        <div class="container mx-auto max-w-4xl text-center relative sr-anim">
+            <p class="text-sm font-bold tracking-widest uppercase mb-4" style="color: #818cf8; font-family: 'Space Mono', monospace;">// The Future Starts Now</p>
+            <h2 class="font-black mb-8 leading-tight" style="font-family: 'Syne', sans-serif; font-size: clamp(2.5rem, 7vw, 5rem); color: var(--heading-color);">
+                Ready to build<br>the future?
+            </h2>
+            <p class="text-xl mb-12 mx-auto" style="color: var(--muted-color); max-width: 32rem; line-height: 1.6;">
+                Join student developers who are collaborating securely and building their portfolios today.
+            </p>
+            <div class="flex flex-col sm:flex-row gap-4 justify-center">
+                <a href="#" class="inline-flex items-center justify-center px-10 py-5 text-lg font-bold text-white rounded-full transition-all duration-300 hover:scale-105" style="background: linear-gradient(135deg, #4f46e5, #7c3aed); box-shadow: 0 0 60px -10px rgba(99,102,241,0.6); font-family: 'Syne', sans-serif;">
+                    Create Your Portfolio →
+                </a>
+                <a href="{% url 'find_projects' %}" class="inline-flex items-center justify-center px-10 py-5 text-lg font-bold rounded-full transition-all duration-300 hover:scale-105 backdrop-blur-sm" style="border: 1px solid var(--border-color); color: var(--body-color); background: var(--glass-bg); font-family: 'Syne', sans-serif;">
+                    Browse Projects
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- ─── FOOTER ─── -->
+    <footer class="relative z-10 py-10 px-6" style="border-top: 1px solid var(--border-color);">
+        <div class="container mx-auto max-w-6xl flex flex-col md:flex-row items-center justify-between gap-4">
+            <div class="flex items-center gap-3">
+                <div class="w-8 h-8 rounded-xl flex items-center justify-center text-white font-black text-sm" style="background: linear-gradient(135deg, #6366f1, #a855f7); font-family: 'Syne', sans-serif;">S</div>
+                <span class="font-bold" style="font-family: 'Syne', sans-serif; color: var(--heading-color);">StudentCollab</span>
+            </div>
+            <p class="text-sm" style="color: var(--muted-color); font-family: 'Space Mono', monospace;">&copy; 2025 StudentCollab. Built for students, by students.</p>
+            <div class="flex gap-6">
+                <a href="#" class="text-sm transition-colors hover:text-indigo-400" style="color: var(--muted-color);">Privacy</a>
+                <a href="#" class="text-sm transition-colors hover:text-indigo-400" style="color: var(--muted-color);">Terms</a>
+                <a href="#" class="text-sm transition-colors hover:text-indigo-400" style="color: var(--muted-color);">GitHub</a>
+            </div>
+        </div>
+    </footer>
+</div>
+
+<!-- Three.js -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+<script>
+// ─── 1. THEME SYSTEM (FIXED) ───
+const html        = document.documentElement;
+const appContainer = document.getElementById('app-container');
+const toggleBtn   = document.getElementById('theme-toggle');
+const toggleKnob  = document.getElementById('toggle-knob');
+const sunIcon     = document.getElementById('sun-icon');
+const moonIcon    = document.getElementById('moon-icon');
+
+function applyTheme(dark) {
+    // Toggle the .dark class on <html> so CSS vars kick in
+    if (dark) {
+        html.classList.add('dark');
+    } else {
+        html.classList.remove('dark');
+    }
+
+    // Imperatively set every visual state — never rely on CSS var cascade into inline styles
+    toggleBtn.style.background   = dark ? '#1e1b4b' : '#e2e8f0';
+    toggleBtn.style.borderColor  = dark ? '#3730a3' : '#cbd5e1';
+    toggleKnob.style.transform   = dark ? 'translateX(26px)' : 'translateX(0px)';
+    toggleKnob.style.background  = dark ? '#6366f1'  : '#ffffff';
+    sunIcon.style.display        = dark ? 'block'    : 'none';
+    moonIcon.style.display       = dark ? 'none'     : 'block';
+    sunIcon.style.color          = '#fbbf24';
+    moonIcon.style.color         = '#6366f1';
+}
+
+// Boot: read saved preference or fall back to system preference
+const saved      = localStorage.getItem('sc-theme');
+const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+applyTheme(saved ? saved === 'dark' : prefersDark);
+
+// Toggle on click
+toggleBtn.addEventListener('click', () => {
+    const goingDark = !html.classList.contains('dark');
+    localStorage.setItem('sc-theme', goingDark ? 'dark' : 'light');
+    applyTheme(goingDark);
+});
+
+// ─── 2. THREE.JS 3D BACKGROUND ───
+(function () {
+    const canvas = document.getElementById('hero-canvas');
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+    const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+    // Wireframe Globe
+    const globeGeo = new THREE.IcosahedronGeometry(12, 3);
+    const globeMat = new THREE.MeshBasicMaterial({ color: 0x6366f1, wireframe: true, transparent: true, opacity: 0.12 });
+    const globe = new THREE.Mesh(globeGeo, globeMat);
+    globe.position.set(8, 0, 0);
+    scene.add(globe);
+
+    // Second smaller globe
+    const globe2Geo = new THREE.IcosahedronGeometry(7, 2);
+    const globe2Mat = new THREE.MeshBasicMaterial({ color: 0xa855f7, wireframe: true, transparent: true, opacity: 0.08 });
+    const globe2 = new THREE.Mesh(globe2Geo, globe2Mat);
+    globe2.position.set(-12, -4, -5);
+    scene.add(globe2);
+
+    // Floating particles
+    const pGeo = new THREE.BufferGeometry();
+    const pCount = 300;
+    const pPos = new Float32Array(pCount * 3);
+    for (let i = 0; i < pCount * 3; i++) pPos[i] = (Math.random() - 0.5) * 50;
+    pGeo.setAttribute('position', new THREE.BufferAttribute(pPos, 3));
+    const pMat = new THREE.PointsMaterial({ size: 0.04, color: 0x818cf8, transparent: true, opacity: 0.7 });
+    const particles = new THREE.Points(pGeo, pMat);
+    scene.add(particles);
+
+    // Network lines
+    const lineGroup = new THREE.Group();
+    for (let i = 0; i < 12; i++) {
+        const pts = [
+            new THREE.Vector3((Math.random() - 0.5) * 40, (Math.random() - 0.5) * 30, (Math.random() - 0.5) * 20),
+            new THREE.Vector3((Math.random() - 0.5) * 40, (Math.random() - 0.5) * 30, (Math.random() - 0.5) * 20)
+        ];
+        const lineGeo = new THREE.BufferGeometry().setFromPoints(pts);
+        const lineMat = new THREE.LineBasicMaterial({ color: 0x6366f1, transparent: true, opacity: 0.06 });
+        lineGroup.add(new THREE.Line(lineGeo, lineMat));
+    }
+    scene.add(lineGroup);
+
+    camera.position.z = 25;
+
+    let mx = 0, my = 0;
+    document.addEventListener('mousemove', e => {
+        mx = (e.clientX / window.innerWidth) * 2 - 1;
+        my = -(e.clientY / window.innerHeight) * 2 + 1;
+    });
+
+    let t = 0;
+    function animate() {
+        requestAnimationFrame(animate);
+        t += 0.005;
+        globe.rotation.y  += 0.0015;
+        globe.rotation.x  += 0.0007;
+        globe.position.y   = Math.sin(t) * 0.8;
+        globe2.rotation.y -= 0.001;
+        globe2.rotation.z += 0.0008;
+        particles.rotation.y -= 0.0003;
+        globe.rotation.y += mx * 0.003;
+        globe.rotation.x += my * 0.003;
+        renderer.render(scene, camera);
+    }
+    animate();
+
+    window.addEventListener('resize', () => {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+})();
+
+// ─── 3. SCROLL REVEAL ───
+const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+        if (entry.isIntersecting) {
+            const styleAttr = entry.target.getAttribute('style') || '';
+            const match = styleAttr.match(/animation-delay:\s*(\d+)ms/);
+            const delay = match ? parseInt(match[1]) : 0;
+            setTimeout(() => {
+                entry.target.classList.add('visible');
+            }, delay);
+            observer.unobserve(entry.target);
+        }
+    });
+}, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
+
+document.querySelectorAll('.sr-anim').forEach(el => observer.observe(el));
+
+// ─── 4. TERMINAL ANIMATION ───
+const terminalSteps = [
+    { id: 'terminal-done',   delay: 2000 },
+    { id: 'terminal-upload', delay: 3000 },
+    { id: 'terminal-server', delay: 4000 },
+    { id: 'terminal-deny',   delay: 5000 },
+    { id: 'terminal-safe',   delay: 6000 },
+];
+terminalSteps.forEach(({ id, delay }) => {
+    setTimeout(() => {
+        const el = document.getElementById(id);
+        if (el) el.style.display = 'block';
+        if (id === 'terminal-done') {
+            const status = document.getElementById('terminal-status');
+            if (status) status.style.display = 'none';
+        }
+    }, delay);
+});
+</script>
+
+{% endblock %}

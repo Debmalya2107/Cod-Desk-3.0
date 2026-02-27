@@ -1,0 +1,135 @@
+{% for msg in messages %}
+    <div class="mb-4 flex {% if msg.sender == user %}justify-end{% else %}justify-start{% endif %} animate-message-in" style="animation-delay: {{ forloop.counter0|divisibleby:2 }}00ms">
+        <div class="max-w-[75%] md:max-w-[65%] group">
+            <!-- Sender Info -->
+            <div class="flex items-center gap-2 mb-1.5 {% if msg.sender == user %}flex-row-reverse{% endif %}">
+                <div class="w-6 h-6 rounded-full bg-gradient-to-br {% if msg.sender == user %}from-blue-500 to-purple-600{% else %}from-slate-400 to-slate-600{% endif %} flex items-center justify-center text-white text-[10px] font-bold shadow-md">
+                    {{ msg.sender.username|first|upper }}
+                </div>
+                <span class="text-xs font-bold {% if msg.sender == user %}text-blue-600 dark:text-blue-400{% else %}text-slate-500 dark:text-slate-400{% endif %}">
+                    {{ msg.sender.username }}
+                </span>
+                <span class="text-[10px] text-slate-400 dark:text-slate-500 flex items-center gap-1">
+                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    {{ msg.created_at|date:"H:i" }}
+                </span>
+            </div>
+            
+            <!-- Message Bubble -->
+            <div class="relative px-5 py-3 rounded-2xl shadow-lg transition-all duration-300 hover:shadow-xl hover:scale-[1.02]
+                {% if msg.sender == user %}
+                    bg-gradient-to-br from-blue-600 to-purple-600 text-white rounded-br-md
+                    shadow-blue-500/20 dark:shadow-blue-500/10
+                {% else %}
+                    bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 rounded-bl-md
+                    border border-slate-200 dark:border-slate-700
+                    shadow-slate-500/10 dark:shadow-black/20
+                {% endif %}">
+                
+                <!-- Message Content -->
+                <p class="text-[15px] leading-relaxed">{{ msg.content }}</p>
+                
+                <!-- Decorative Tail -->
+                <div class="absolute bottom-0 {% if msg.sender == user %}right-0 translate-x-1/2{% else %}left-0 -translate-x-1/2{% endif %} w-4 h-4 overflow-hidden" style="bottom: -8px;">
+                    <div class="w-4 h-4 rotate-45 transform origin-center
+                        {% if msg.sender == user %}
+                            bg-gradient-to-br from-blue-600 to-purple-600
+                        {% else %}
+                            bg-white dark:bg-slate-800 border-r border-b border-slate-200 dark:border-slate-700
+                        {% endif %}">
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Read Receipt (for user messages) -->
+            {% if msg.sender == user %}
+                <div class="flex justify-end mt-1 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                    <svg class="w-4 h-4 text-blue-500 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                    </svg>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+{% empty %}
+    <!-- Empty State -->
+    <div class="flex flex-col items-center justify-center h-full py-12 animate-fade-in">
+        <div class="w-24 h-24 rounded-3xl bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-700 flex items-center justify-center mb-6 shadow-inner">
+            <svg class="w-12 h-12 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
+            </svg>
+        </div>
+        <h3 class="text-xl font-bold text-slate-700 dark:text-slate-300 mb-2">No messages yet</h3>
+        <p class="text-slate-500 dark:text-slate-400 text-center max-w-sm">
+            Start the conversation! Share your ideas, ask questions, or just say hello to your team.
+        </p>
+        <div class="mt-6 flex items-center gap-2 text-sm text-slate-400 dark:text-slate-500">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122"></path>
+            </svg>
+            <span>Type your first message below</span>
+        </div>
+    </div>
+{% endfor %}
+
+<style>
+    /* Message Animation */
+    @keyframes message-in {
+        from {
+            opacity: 0;
+            transform: translateY(10px) scale(0.95);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+        }
+    }
+    
+    .animate-message-in {
+        animation: message-in 0.3s ease-out forwards;
+    }
+    
+    @keyframes fade-in {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    
+    .animate-fade-in {
+        animation: fade-in 0.5s ease-out forwards;
+    }
+    
+    /* Message Hover Effects */
+    .group:hover .max-w-\[75\%\] {
+        transform: translateY(-2px);
+    }
+    
+    /* Custom Scrollbar for message container */
+    .overflow-y-auto::-webkit-scrollbar {
+        width: 6px;
+    }
+    .overflow-y-auto::-webkit-scrollbar-track {
+        background: transparent;
+    }
+    .overflow-y-auto::-webkit-scrollbar-thumb {
+        background: #cbd5e1;
+        border-radius: 3px;
+    }
+    .dark .overflow-y-auto::-webkit-scrollbar-thumb {
+        background: #475569;
+    }
+</style>
+
+<script>
+    // Auto-scroll to bottom on new messages
+    document.addEventListener('DOMContentLoaded', function() {
+        const chatContainer = document.getElementById('chat-container');
+        if (chatContainer) {
+            const isNearBottom = chatContainer.scrollHeight - chatContainer.scrollTop - chatContainer.clientHeight < 100;
+            if (isNearBottom) {
+                chatContainer.scrollTop = chatContainer.scrollHeight;
+            }
+        }
+    });
+</script>

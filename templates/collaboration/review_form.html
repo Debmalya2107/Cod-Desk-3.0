@@ -1,0 +1,591 @@
+{% extends 'base.html' %}
+{% block content %}
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+
+<style>
+/* ─── THEME VARIABLES ─── */
+:root {
+    --bg: #f4f6fb;
+    --surface: #ffffff;
+    --surface-alt: #f1f5f9;
+    --border: rgba(0,0,0,0.08);
+    --border-strong: rgba(0,0,0,0.13);
+    --heading: #0f172a;
+    --body: #1e293b;
+    --muted: #64748b;
+    --faint: #94a3b8;
+    --indigo: #6366f1;
+    --indigo-soft: rgba(99,102,241,0.09);
+    --indigo-border: rgba(99,102,241,0.22);
+    --card-shadow: 0 2px 8px rgba(0,0,0,0.06), 0 8px 32px rgba(0,0,0,0.05);
+    --label-color: #374151;
+    --input-bg: #f8fafc;
+    --input-focus-shadow: 0 0 0 3px rgba(99,102,241,0.15);
+}
+html.dark {
+    --bg: #060913;
+    --surface: rgba(255,255,255,0.035);
+    --surface-alt: rgba(255,255,255,0.025);
+    --border: rgba(255,255,255,0.07);
+    --border-strong: rgba(255,255,255,0.13);
+    --heading: #f1f5f9;
+    --body: #cbd5e1;
+    --muted: #64748b;
+    --faint: #475569;
+    --indigo: #818cf8;
+    --indigo-soft: rgba(129,140,248,0.1);
+    --indigo-border: rgba(129,140,248,0.25);
+    --card-shadow: 0 2px 8px rgba(0,0,0,0.4), 0 8px 32px rgba(0,0,0,0.3);
+    --label-color: #94a3b8;
+    --input-bg: rgba(255,255,255,0.04);
+    --input-focus-shadow: 0 0 0 3px rgba(129,140,248,0.2);
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+#review-page {
+    min-height: 100vh;
+    background: var(--bg);
+    color: var(--body);
+    font-family: 'Syne', sans-serif;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 5rem 1.25rem 3rem;
+    position: relative;
+    overflow: hidden;
+    transition: background 0.4s, color 0.4s;
+}
+
+/* ─── CANVAS ─── */
+#review-canvas {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.18;
+}
+
+/* ─── BLOBS ─── */
+.blob {
+    position: fixed;
+    border-radius: 50%;
+    pointer-events: none;
+    filter: blur(60px);
+    z-index: 0;
+}
+.blob-1 { width: 400px; height: 400px; top: -100px; right: -80px; background: radial-gradient(circle, rgba(99,102,241,0.18) 0%, transparent 70%); animation: floatA 9s ease-in-out infinite; }
+.blob-2 { width: 300px; height: 300px; bottom: -60px; left: -60px; background: radial-gradient(circle, rgba(168,85,247,0.14) 0%, transparent 70%); animation: floatB 11s ease-in-out infinite; }
+
+@keyframes floatA { 0%,100%{transform:translate(0,0) scale(1)} 50%{transform:translate(-20px,30px) scale(1.06)} }
+@keyframes floatB { 0%,100%{transform:translate(0,0) scale(1)} 50%{transform:translate(25px,-20px) scale(0.94)} }
+
+/* ─── TOGGLE ─── */
+#theme-toggle {
+    position: fixed;
+    top: 1.25rem;
+    right: 1.5rem;
+    z-index: 100;
+    width: 52px;
+    height: 27px;
+    border-radius: 999px;
+    border: 1px solid;
+    cursor: pointer;
+    transition: background 0.4s, border-color 0.4s;
+}
+#toggle-knob {
+    position: absolute;
+    top: 3px; left: 3px;
+    width: 19px; height: 19px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.4s cubic-bezier(0.34,1.56,0.64,1), background 0.4s;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
+#toggle-knob svg { width: 11px; height: 11px; }
+
+/* ─── CARD ─── */
+.review-card {
+    position: relative;
+    z-index: 10;
+    width: 100%;
+    max-width: 520px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 28px;
+    padding: 2.5rem 2.25rem 2rem;
+    box-shadow: var(--card-shadow);
+    transition: background 0.4s, border-color 0.4s, box-shadow 0.4s;
+    animation: cardIn 0.6s cubic-bezier(0.16,1,0.3,1) both;
+}
+@keyframes cardIn {
+    from { opacity: 0; transform: translateY(24px) scale(0.98); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* Top accent bar */
+.review-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 2rem; right: 2rem;
+    height: 3px;
+    border-radius: 0 0 3px 3px;
+    background: linear-gradient(90deg, #6366f1, #a855f7, #ec4899);
+}
+
+/* ─── HEADER ─── */
+.card-eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.25rem 0.7rem;
+    border-radius: 999px;
+    font-size: 0.62rem;
+    font-weight: 700;
+    letter-spacing: 0.13em;
+    text-transform: uppercase;
+    font-family: 'Space Mono', monospace;
+    background: var(--indigo-soft);
+    color: var(--indigo);
+    border: 1px solid var(--indigo-border);
+    margin-bottom: 1rem;
+}
+.card-eyebrow-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--indigo);
+    animation: ping 1.8s ease-in-out infinite;
+}
+@keyframes ping {
+    0%,100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.4; transform: scale(1.4); }
+}
+
+.card-title {
+    font-size: 1.6rem;
+    font-weight: 800;
+    color: var(--heading);
+    margin: 0 0 0.3rem;
+    letter-spacing: -0.03em;
+    line-height: 1.15;
+}
+.card-subtitle {
+    font-size: 0.8rem;
+    color: var(--muted);
+    font-family: 'Space Mono', monospace;
+    margin-bottom: 1.75rem;
+}
+.project-name {
+    color: var(--indigo);
+    font-weight: 700;
+}
+
+/* ─── DIVIDER ─── */
+.card-divider {
+    height: 1px;
+    background: var(--border);
+    margin: 1.5rem 0;
+}
+
+/* ─── FORM FIELDS ─── */
+.field { margin-bottom: 1.25rem; }
+
+.field-label {
+    display: block;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--label-color);
+    font-family: 'Space Mono', monospace;
+    margin-bottom: 0.5rem;
+}
+
+.field-select,
+.field-textarea {
+    width: 100%;
+    background: var(--input-bg);
+    border: 1px solid var(--border-strong);
+    border-radius: 12px;
+    color: var(--body);
+    font-family: 'Syne', sans-serif;
+    font-size: 0.88rem;
+    outline: none;
+    transition: border-color 0.25s, box-shadow 0.25s, background 0.4s;
+    appearance: none;
+    -webkit-appearance: none;
+}
+.field-select { padding: 0.7rem 2.2rem 0.7rem 1rem; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' stroke='%2364748b' stroke-width='2' viewBox='0 0 24 24'%3E%3Cpath d='M6 9l6 6 6-6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 0.75rem center; cursor: pointer; }
+.field-textarea { padding: 0.75rem 1rem; resize: vertical; min-height: 110px; line-height: 1.6; }
+
+.field-select:focus, .field-textarea:focus {
+    border-color: var(--indigo);
+    box-shadow: var(--input-focus-shadow);
+    background: var(--surface);
+}
+.field-select option { background: var(--surface); color: var(--body); }
+
+/* ─── RATING WIDGET ─── */
+.rating-group {
+    display: flex;
+    flex-direction: row-reverse;
+    gap: 0.3rem;
+    justify-content: flex-end;
+}
+.rating-group input[type="radio"] { display: none; }
+.rating-group label {
+    cursor: pointer;
+    font-size: 1.5rem;
+    line-height: 1;
+    color: var(--faint);
+    transition: transform 0.15s, color 0.15s;
+    user-select: none;
+    /* Use SVG star instead of emoji */
+    font-size: 0; /* hide text, show pseudo */
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.rating-group label::before {
+    content: '';
+    display: block;
+    width: 26px;
+    height: 26px;
+    background: var(--faint);
+    clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);
+    transition: background 0.15s, transform 0.15s;
+}
+.rating-group label:hover::before,
+.rating-group label:hover ~ label::before,
+.rating-group input:checked ~ label::before {
+    background: #fbbf24;
+    transform: scale(1.18);
+}
+.rating-group input:checked + label::before { background: #f59e0b; }
+
+.rating-labels {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 0.4rem;
+    padding: 0 2px;
+}
+.rating-labels span {
+    font-size: 0.6rem;
+    color: var(--faint);
+    font-family: 'Space Mono', monospace;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+/* ─── HIDDEN RATING SELECT ─── */
+#rating-value { display: none; }
+
+/* ─── AI NOTE ─── */
+.ai-note {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.6rem;
+    padding: 0.75rem 0.9rem;
+    border-radius: 12px;
+    background: var(--indigo-soft);
+    border: 1px solid var(--indigo-border);
+    margin-bottom: 1.5rem;
+}
+.ai-note-icon {
+    width: 18px; height: 18px;
+    flex-shrink: 0;
+    color: var(--indigo);
+    margin-top: 1px;
+}
+.ai-note p {
+    font-size: 0.72rem;
+    color: var(--muted);
+    font-family: 'Space Mono', monospace;
+    line-height: 1.5;
+    margin: 0;
+}
+.ai-note p strong { color: var(--indigo); font-weight: 700; }
+
+/* ─── SUBMIT BUTTON ─── */
+.btn-submit {
+    width: 100%;
+    padding: 0.85rem 1rem;
+    border-radius: 14px;
+    background: linear-gradient(135deg, #4f46e5, #7c3aed);
+    color: #fff;
+    font-family: 'Syne', sans-serif;
+    font-size: 0.95rem;
+    font-weight: 700;
+    border: none;
+    cursor: pointer;
+    letter-spacing: 0.01em;
+    transition: all 0.3s;
+    box-shadow: 0 0 30px -8px rgba(99,102,241,0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+}
+.btn-submit:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 0 45px -8px rgba(99,102,241,0.8);
+}
+.btn-submit:active { transform: translateY(0); }
+.btn-submit svg { width: 16px; height: 16px; }
+
+/* ─── TEAMMATE OPTION PREVIEW ─── */
+.teammate-preview {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.65rem 0.75rem;
+    border-radius: 10px;
+    background: var(--surface-alt);
+    border: 1px solid var(--border);
+    margin-bottom: 0.5rem;
+    font-size: 0.83rem;
+    color: var(--body);
+    font-weight: 600;
+}
+.teammate-avatar {
+    width: 28px; height: 28px;
+    border-radius: 8px;
+    background: linear-gradient(135deg, #6366f1, #a855f7);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.7rem;
+    font-weight: 800;
+    color: #fff;
+    flex-shrink: 0;
+}
+
+/* ─── SCROLLBAR ─── */
+::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 99px; }
+</style>
+
+<!-- Canvas BG -->
+<canvas id="review-canvas"></canvas>
+
+<!-- Blobs -->
+<div class="blob blob-1"></div>
+<div class="blob blob-2"></div>
+
+<!-- Theme Toggle -->
+<button id="theme-toggle" aria-label="Toggle theme">
+    <span id="toggle-knob">
+        <svg id="sun-svg" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" style="display:none;"><path d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <svg id="moon-svg" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" style="display:block;"><path d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </span>
+</button>
+
+<div id="review-page">
+    <div class="review-card">
+
+        <!-- Header -->
+        <div class="card-eyebrow">
+            <span class="card-eyebrow-dot"></span>
+            Peer Review
+        </div>
+        <h1 class="card-title">Review a Teammate</h1>
+        <p class="card-subtitle">
+            Project: <span class="project-name">{{ project.title }}</span>
+        </p>
+
+        <div class="card-divider"></div>
+
+        <form method="POST" id="review-form">
+            {% csrf_token %}
+
+            <!-- Teammate Select -->
+            <div class="field">
+                <label class="field-label" for="reviewee-select">Select Teammate</label>
+                <select name="reviewee_id" id="reviewee-select" class="field-select" required>
+                    {% for member in project.members.all %}
+                        {% if member != request.user %}
+                            <option value="{{ member.id }}">{{ member.username }}</option>
+                        {% endif %}
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- Star Rating Widget -->
+            <div class="field">
+                <label class="field-label">Rating</label>
+                <!-- Visible star widget -->
+                <div class="rating-group" id="star-widget">
+                    <input type="radio" id="s5" name="_star" value="5"><label for="s5" title="Excellent"></label>
+                    <input type="radio" id="s4" name="_star" value="4"><label for="s4" title="Good"></label>
+                    <input type="radio" id="s3" name="_star" value="3" checked><label for="s3" title="Average"></label>
+                    <input type="radio" id="s2" name="_star" value="2"><label for="s2" title="Poor"></label>
+                    <input type="radio" id="s1" name="_star" value="1"><label for="s1" title="Terrible"></label>
+                </div>
+                <div class="rating-labels">
+                    <span>Terrible</span>
+                    <span>Excellent</span>
+                </div>
+                <!-- Hidden real select that Django reads -->
+                <select name="rating" id="rating-value">
+                    <option value="5">5</option>
+                    <option value="4">4</option>
+                    <option value="3" selected>3</option>
+                    <option value="2">2</option>
+                    <option value="1">1</option>
+                </select>
+            </div>
+
+            <!-- Feedback Textarea -->
+            <div class="field">
+                <label class="field-label" for="feedback-field">Feedback</label>
+                <textarea name="feedback" id="feedback-field" class="field-textarea" placeholder="Be constructive and specific. What did they do well? What could they improve?" required></textarea>
+            </div>
+
+            <!-- AI Note -->
+            <div class="ai-note">
+                <svg class="ai-note-icon" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                    <path d="M13 10V3L4 14h7v7l9-11h-7z" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                <p><strong>AI Analysis:</strong> Our model reviews feedback for constructive tone before submission. Respectful, specific feedback leads to better outcomes for your team.</p>
+            </div>
+
+            <!-- Submit -->
+            <button type="submit" class="btn-submit" id="submit-btn">
+                <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                Submit Review
+            </button>
+        </form>
+    </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+// ─── THEME ───
+const html    = document.documentElement;
+const toggle  = document.getElementById('theme-toggle');
+const knob    = document.getElementById('toggle-knob');
+const sunSvg  = document.getElementById('sun-svg');
+const moonSvg = document.getElementById('moon-svg');
+
+function applyTheme(dark) {
+    dark ? html.classList.add('dark') : html.classList.remove('dark');
+    toggle.style.background   = dark ? '#1e1b4b' : '#e2e8f0';
+    toggle.style.borderColor  = dark ? '#3730a3' : '#cbd5e1';
+    knob.style.transform      = dark ? 'translateX(25px)' : 'translateX(0)';
+    knob.style.background     = dark ? '#818cf8' : '#ffffff';
+    sunSvg.style.display      = dark ? 'block' : 'none';
+    moonSvg.style.display     = dark ? 'none'  : 'block';
+    sunSvg.style.color        = '#fbbf24';
+    moonSvg.style.color       = '#6366f1';
+}
+
+const saved = localStorage.getItem('sc-theme');
+applyTheme(saved ? saved === 'dark' : window.matchMedia('(prefers-color-scheme: dark)').matches);
+
+toggle.addEventListener('click', () => {
+    const going = !html.classList.contains('dark');
+    localStorage.setItem('sc-theme', going ? 'dark' : 'light');
+    applyTheme(going);
+});
+
+// ─── STAR RATING → SYNC TO HIDDEN SELECT ───
+document.querySelectorAll('#star-widget input').forEach(radio => {
+    radio.addEventListener('change', () => {
+        document.getElementById('rating-value').value = radio.value;
+    });
+});
+
+// ─── SUBMIT FEEDBACK ───
+document.getElementById('review-form').addEventListener('submit', function() {
+    const btn = document.getElementById('submit-btn');
+    btn.innerHTML = `<svg style="animation:spin 1s linear infinite" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" stroke-linecap="round" stroke-linejoin="round"/></svg> Submitting...`;
+    btn.style.opacity = '0.75';
+    btn.style.pointerEvents = 'none';
+});
+
+// ─── THREE.JS BACKGROUND ───
+(function() {
+    const canvas = document.getElementById('review-canvas');
+    canvas.style.position = 'fixed';
+    canvas.style.inset = '0';
+    canvas.style.zIndex = '0';
+    canvas.style.pointerEvents = 'none';
+
+    const scene    = new THREE.Scene();
+    const camera   = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.1, 1000);
+    const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+    // Ring 1
+    const r1 = new THREE.Mesh(
+        new THREE.TorusGeometry(10, 0.4, 10, 60),
+        new THREE.MeshBasicMaterial({ color: 0x6366f1, wireframe: true, transparent: true, opacity: 0.08 })
+    );
+    r1.position.set(14, 2, -12);
+    scene.add(r1);
+
+    // Ring 2
+    const r2 = new THREE.Mesh(
+        new THREE.TorusGeometry(7, 0.25, 8, 48),
+        new THREE.MeshBasicMaterial({ color: 0xa855f7, wireframe: true, transparent: true, opacity: 0.07 })
+    );
+    r2.position.set(-14, -3, -14);
+    scene.add(r2);
+
+    // Icosahedron
+    const ico = new THREE.Mesh(
+        new THREE.IcosahedronGeometry(4.5, 1),
+        new THREE.MeshBasicMaterial({ color: 0x818cf8, wireframe: true, transparent: true, opacity: 0.07 })
+    );
+    ico.position.set(-5, 8, -10);
+    scene.add(ico);
+
+    // Particles
+    const pGeo = new THREE.BufferGeometry();
+    const pArr = new Float32Array(350 * 3);
+    for (let i = 0; i < 350 * 3; i++) pArr[i] = (Math.random() - 0.5) * 50;
+    pGeo.setAttribute('position', new THREE.BufferAttribute(pArr, 3));
+    scene.add(new THREE.Points(pGeo, new THREE.PointsMaterial({ size: 0.045, color: 0x818cf8, transparent: true, opacity: 0.55 })));
+
+    camera.position.z = 22;
+
+    let mx = 0, my = 0;
+    document.addEventListener('mousemove', e => {
+        mx = (e.clientX / window.innerWidth - 0.5) * 0.25;
+        my = (e.clientY / window.innerHeight - 0.5) * 0.25;
+    });
+
+    function animate() {
+        requestAnimationFrame(animate);
+        r1.rotation.x += 0.004;
+        r1.rotation.y += 0.002;
+        r2.rotation.y -= 0.005;
+        r2.rotation.z += 0.003;
+        ico.rotation.x += 0.006;
+        ico.rotation.y += 0.004;
+        camera.position.x += (mx - camera.position.x) * 0.04;
+        camera.position.y += (-my - camera.position.y) * 0.04;
+        renderer.render(scene, camera);
+    }
+    animate();
+
+    window.addEventListener('resize', () => {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+})();
+</script>
+
+<style>
+@keyframes spin { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
+</style>
+
+{% endblock %}
